@@ -1,9 +1,9 @@
-# Configuration de journalisation
+# Logging configuration
 
-# Format de journalisation par du00e9faut
+# Default logging format
 format: "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n"
 
-# Niveaux de journalisation disponibles
+# Available logging levels
 levels:
   debug: 100
   info: 200
@@ -14,7 +14,7 @@ levels:
   alert: 550
   emergency: 600
 
-# Configuration des canaux
+# Channels configuration
 channels:
   app:
     handlers: [file, console]
@@ -26,7 +26,7 @@ channels:
     handlers: [file]
     level: info
 
-# Configuration des gestionnaires
+# Handlers configuration
 handlers:
   file:
     type: stream
@@ -37,7 +37,7 @@ handlers:
     type: database
     table: logs
 
-# Configuration de la rotation des journaux
+# Log rotation configuration
 rotation:
   max_files: 10
   max_size: "10M"

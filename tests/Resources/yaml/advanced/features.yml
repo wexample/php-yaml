@@ -1,6 +1,6 @@
-# Configuration des fonctionnalités
+# Features configuration
 
-# Fonctionnalité 1
+# Feature 1
 feature_one:
   name: "Feature One"
   description: "First advanced feature"
@@ -13,7 +13,7 @@ feature_one:
       rate: 100
       period: 60
 
-# Fonctionnalité 2
+# Feature 2
 feature_two:
   name: "Feature Two"
   description: "Second advanced feature"
@@ -27,14 +27,14 @@ feature_two:
       throttling:
         enabled: false
 
-# Fonctionnalité 3 avec extension
+# Feature 3 with extension
 feature_three:
   ~extends: '@features::feature_one'
   name: "Feature Three"
   description: "Extended feature"
   version: 1.0.0
 
-# Fonctionnalité avec références imbriquées
+# Feature with nested references
 feature_nested:
   name: "Nested Feature"
   config: '@config::config_group.features.feature_one'

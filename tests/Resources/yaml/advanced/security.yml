@@ -1,18 +1,18 @@
-# Fichier de configuration de sécurité
+# Security configuration file
 
-# Informations d'identification pour la base de données
+# Database credentials
 database:
   credentials:
     username: db_user
     password: secret_password
 
-# Paramètres de sécurité
+# Security settings
 security_settings:
   encryption: AES-256
   salt: random_salt_value
   iterations: 10000
 
-# Paramètres d'authentification
+# Authentication parameters
 authentication:
   jwt:
     secret: jwt_secret_key
@@ -27,7 +27,7 @@ authentication:
         client_id: facebook_client_id
         client_secret: facebook_client_secret
 
-# Règles de mot de passe
+# Password rules
 password_policy:
   min_length: 8
   require_uppercase: true
