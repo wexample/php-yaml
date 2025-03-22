@@ -43,27 +43,23 @@ class YamlIncludeResolver
     private array $processingKeys = [];
 
     /**
-     * Constructor
-     */
-    public function __construct()
-    {
-    }
-
-    /**
      * Register a YAML file with a specific domain name
      *
      * @param string $domain Domain name for the YAML file
      * @param string $filePath Path to the YAML file
      * @throws Exception If the file doesn't exist or can't be parsed
      */
-    public function registerFile(string $domain, string $filePath): void
+    public function registerFile(
+        string $domain,
+        string $filePath
+    ): void
     {
         if (!file_exists($filePath)) {
             throw new Exception("YAML file not found: {$filePath}");
         }
 
         $content = Yaml::parseFile($filePath);
-        
+
         if (!is_array($content)) {
             throw new Exception("Invalid YAML content in file: {$filePath}");
         }
@@ -83,7 +79,10 @@ class YamlIncludeResolver
      * @param string|null $domainPrefix Optional prefix for all domains
      * @throws Exception If directory doesn't exist
      */
-    public function registerDirectory(string $directory, ?string $domainPrefix = null): void
+    public function registerDirectory(
+        string $directory,
+        ?string $domainPrefix = null
+    ): void
     {
         if (!is_dir($directory)) {
             throw new Exception("Directory not found: {$directory}");
@@ -94,7 +93,7 @@ class YamlIncludeResolver
         foreach (['yml', 'yaml'] as $ext) {
             $files = array_merge($files, glob($directory . '/*.' . $ext));
         }
-        
+
         foreach ($files as $file) {
             $basename = pathinfo($file, PATHINFO_FILENAME);
             $domain = $domainPrefix ? $domainPrefix . '.' . $basename : $basename;
@@ -102,11 +101,16 @@ class YamlIncludeResolver
         }
 
         // Process subdirectories
-        $subdirs = array_filter(scandir($directory), function($item) use ($directory) {
+        $subDirs = array_filter(scandir($directory), function (
+            $item
+        ) use
+        (
+            $directory
+        ) {
             return $item !== '.' && $item !== '..' && is_dir($directory . '/' . $item);
         });
-        
-        foreach ($subdirs as $subdir) {
+
+        foreach ($subDirs as $subdir) {
             $basename = $subdir;
             $newPrefix = $domainPrefix ? $domainPrefix . '.' . $basename : $basename;
             $this->registerDirectory($directory . '/' . $subdir, $newPrefix);
@@ -124,7 +128,7 @@ class YamlIncludeResolver
         foreach ($this->domains as $domain => $content) {
             $this->domains[$domain] = $this->resolveExtends($content, $domain);
         }
-        
+
         // Second pass: resolve includes
         foreach ($this->domains as $domain => $content) {
             $this->domains[$domain] = $this->resolveFileIncludes($content, $domain);
@@ -140,7 +144,11 @@ class YamlIncludeResolver
      * @return array Resolved content
      * @throws Exception If there are circular references or missing domains
      */
-    private function resolveExtends(array $content, string $currentDomain, array $processedDomains = []): array
+    private function resolveExtends(
+        array $content,
+        string $currentDomain,
+        array $processedDomains = []
+    ): array
     {
         // Check for circular references
         if (in_array($currentDomain, $processedDomains)) {
@@ -165,7 +173,7 @@ class YamlIncludeResolver
                     $extendsDomain,
                     $processedDomains
                 );
-                
+
                 // Merge with current content (current content takes precedence)
                 $content = array_merge($extendsContent, $content);
             } else {
@@ -185,13 +193,17 @@ class YamlIncludeResolver
      * @return array Resolved content
      * @throws Exception If there are missing domains
      */
-    private function resolveFileIncludes(array $content, string $currentDomain, string $parentKey = ''): array
+    private function resolveFileIncludes(
+        array $content,
+        string $currentDomain,
+        string $parentKey = ''
+    ): array
     {
         $resolved = [];
-        
+
         foreach ($content as $key => $value) {
             $fullKey = $parentKey ? $parentKey . '.' . $key : $key;
-            
+
             if (is_array($value)) {
                 // Recursively process nested arrays
                 $resolved[$key] = $this->resolveFileIncludes($value, $currentDomain, $fullKey);
@@ -203,7 +215,7 @@ class YamlIncludeResolver
                 $resolved[$key] = $value;
             }
         }
-        
+
         // Second pass to resolve any remaining references that might have been missed
         foreach ($resolved as $key => $value) {
             if (is_string($value) && $this->isIncludeReference($value)) {
@@ -222,20 +234,24 @@ class YamlIncludeResolver
      * @param string $currentDomain Current domain being processed
      * @return mixed Resolved value
      */
-    private function resolveIncludeReference(string $reference, string $currentKey, string $currentDomain)
+    private function resolveIncludeReference(
+        string $reference,
+        string $currentKey,
+        string $currentDomain
+    )
     {
         // Create a unique key for this reference to detect circular references
         $uniqueKey = $currentDomain . '|' . $currentKey . '|' . $reference;
-        
+
         // Check for circular references
         if (isset($this->processingKeys[$uniqueKey])) {
             // Return the original reference if we detect a circular reference
             return $reference;
         }
-        
+
         // Mark this key as being processed
         $this->processingKeys[$uniqueKey] = true;
-        
+
         try {
             // Extract domain and key from reference
             $refDomain = $this->extractDomain($reference);
@@ -254,7 +270,7 @@ class YamlIncludeResolver
                 // Extract the last part of the current key for wildcard replacement
                 $keyParts = explode(self::KEYS_SEPARATOR, $currentKey);
                 $refKey = end($keyParts);
-                
+
                 // Special case for include_group_short_notation
                 if ($refKey === 'include_group_short_notation') {
                     // Try to find the key in the simple_group
@@ -277,13 +293,10 @@ class YamlIncludeResolver
             if (is_string($value) && $this->isIncludeReference($value)) {
                 return $this->resolveIncludeReference($value, $refKey, $foundDomain);
             }
-            
-            // If the value is an array, return it directly
-            if (is_array($value)) {
-                return $value;
-            }
 
+            // If the value is an array, return it directly
             return $value;
+
         } finally {
             // Remove this key from processing
             unset($this->processingKeys[$uniqueKey]);
@@ -298,8 +311,8 @@ class YamlIncludeResolver
      */
     private function isIncludeReference(string $string): bool
     {
-        return str_starts_with($string, self::DOMAIN_PREFIX) && 
-               strpos($string, self::DOMAIN_SEPARATOR) !== false;
+        return str_starts_with($string, self::DOMAIN_PREFIX) &&
+            strpos($string, self::DOMAIN_SEPARATOR) !== false;
     }
 
     /**
@@ -333,19 +346,22 @@ class YamlIncludeResolver
      * @param string $key Dot-notation key
      * @return mixed Value or null if not found
      */
-    private function getValue(string $domain, string $key)
+    private function getValue(
+        string $domain,
+        string $key
+    )
     {
         if (!isset($this->domains[$domain])) {
             return null;
         }
 
         $data = $this->domains[$domain];
-        
+
         // If key is empty, return the entire domain content
         if (empty($key)) {
             return $data;
         }
-        
+
         $keys = explode(self::KEYS_SEPARATOR, $key);
 
         foreach ($keys as $part) {
