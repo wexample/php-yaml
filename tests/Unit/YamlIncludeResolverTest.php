@@ -2,6 +2,7 @@
 
 namespace Wexample\PhpYamlIncludes\Tests\Unit;
 
+use Exception;
 use PHPUnit\Framework\TestCase;
 use Wexample\PhpYamlIncludes\YamlIncludeResolver;
 
@@ -10,6 +11,9 @@ class YamlIncludeResolverTest extends TestCase
     private YamlIncludeResolver $resolver;
     private string $resourcesPath;
 
+    /**
+     * @throws Exception
+     */
     protected function setUp(): void
     {
         $this->resolver = new YamlIncludeResolver();
@@ -116,6 +120,9 @@ class YamlIncludeResolverTest extends TestCase
         $this->assertEquals('Value specific to three', $content['three_specific_key']);
     }
 
+    /**
+     * @throws Exception
+     */
     public function testRegisterDirectory()
     {
         $resolver = new YamlIncludeResolver();
