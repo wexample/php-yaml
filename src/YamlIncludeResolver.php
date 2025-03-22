@@ -1,6 +1,6 @@
 <?php
 
-namespace Wexample\PhpYamlIncludes;
+namespace Wexample\PhpYaml;
 
 use Exception;
 use Symfony\Component\Yaml\Yaml;
@@ -37,10 +37,7 @@ class YamlIncludeResolver
      */
     private array $domains = [];
 
-    /**
-     * Processed keys during resolution to detect circular references
-     */
-    private array $processingKeys = [];
+    protected array $domainsStack = [];
 
     /**
      * Register a YAML file with a specific domain name
@@ -70,305 +67,6 @@ class YamlIncludeResolver
         }
 
         $this->domains[$domain] = $content;
-    }
-
-    /**
-     * Register a directory of YAML files
-     *
-     * @param string $directory Directory containing YAML files
-     * @param string|null $domainPrefix Optional prefix for all domains
-     * @throws Exception If directory doesn't exist
-     */
-    public function registerDirectory(
-        string $directory,
-        ?string $domainPrefix = null
-    ): void
-    {
-        if (!is_dir($directory)) {
-            throw new Exception("Directory not found: $directory");
-        }
-
-        // Get all YAML files in the directory
-        $files = [];
-        foreach (['yml', 'yaml'] as $ext) {
-            $files = array_merge($files, glob($directory . '/*.' . $ext));
-        }
-
-        foreach ($files as $file) {
-            $basename = pathinfo($file, PATHINFO_FILENAME);
-            $domain = $domainPrefix ? $domainPrefix . '.' . $basename : $basename;
-            $this->registerFile($domain, $file);
-        }
-
-        // Process subdirectories
-        $subDirs = array_filter(scandir($directory), function (
-            $item
-        ) use
-        (
-            $directory
-        ) {
-            return $item !== '.' && $item !== '..' && is_dir($directory . '/' . $item);
-        });
-
-        foreach ($subDirs as $subdir) {
-            $basename = $subdir;
-            $newPrefix = $domainPrefix ? $domainPrefix . '.' . $basename : $basename;
-            $this->registerDirectory($directory . '/' . $subdir, $newPrefix);
-        }
-    }
-
-    /**
-     * Resolve all includes in the registered YAML files
-     *
-     * @throws Exception If there are circular references or missing domains
-     */
-    public function resolveIncludes(): void
-    {
-        // First pass: resolve extends
-        foreach ($this->domains as $domain => $content) {
-            $this->domains[$domain] = $this->resolveExtends($content, $domain);
-        }
-
-        // Second pass: resolve includes
-        foreach ($this->domains as $domain => $content) {
-            $this->domains[$domain] = $this->resolveFileIncludes($content, $domain);
-        }
-    }
-
-    /**
-     * Resolve extends in a file
-     *
-     * @param array $content YAML content
-     * @param string $currentDomain Current domain being processed
-     * @param array $processedDomains Domains already processed (to detect circular references)
-     * @return array Resolved content
-     * @throws Exception If there are circular references or missing domains
-     */
-    private function resolveExtends(
-        array $content,
-        string $currentDomain,
-        array $processedDomains = []
-    ): array
-    {
-        // Check for circular references
-        if (in_array($currentDomain, $processedDomains)) {
-            throw new Exception("Circular reference detected in extends: $currentDomain");
-        }
-
-        // Add current domain to processed domains
-        $processedDomains[] = $currentDomain;
-
-        // Handle extends
-        if (isset($content[self::FILE_EXTENDS])) {
-            $extendsDomainRaw = $this->trimDomain($content[self::FILE_EXTENDS]);
-            unset($content[self::FILE_EXTENDS]);
-
-            // Find the domain to extend
-            $extendsDomain = $this->findDomain($extendsDomainRaw);
-
-            if ($extendsDomain) {
-                // Resolve extends domain first
-                $extendsContent = $this->resolveExtends(
-                    $this->domains[$extendsDomain],
-                    $extendsDomain,
-                    $processedDomains
-                );
-
-                // Merge with current content (current content takes precedence)
-                $content = array_merge($extendsContent, $content);
-            } else {
-                throw new Exception("Unable to extend domain that does not exist: $extendsDomainRaw");
-            }
-        }
-
-        return $content;
-    }
-
-    /**
-     * Resolve includes in a single file content
-     *
-     * @param array $content YAML content
-     * @param string $currentDomain Current domain being processed
-     * @param string $parentKey Parent key path (for nested structures)
-     * @return array Resolved content
-     * @throws Exception If there are missing domains
-     */
-    private function resolveFileIncludes(
-        array $content,
-        string $currentDomain,
-        string $parentKey = ''
-    ): array
-    {
-        $resolved = [];
-
-        foreach ($content as $key => $value) {
-            $fullKey = $parentKey ? $parentKey . '.' . $key : $key;
-
-            if (is_array($value)) {
-                // Recursively process nested arrays
-                $resolved[$key] = $this->resolveFileIncludes($value, $currentDomain, $fullKey);
-            } elseif (is_string($value) && $this->isIncludeReference($value)) {
-                // Resolve include reference
-                $resolved[$key] = $this->resolveIncludeReference($value, $fullKey, $currentDomain);
-            } else {
-                // Keep as is
-                $resolved[$key] = $value;
-            }
-        }
-
-        // Second pass to resolve any remaining references that might have been missed
-        foreach ($resolved as $key => $value) {
-            if (is_string($value) && $this->isIncludeReference($value)) {
-                $resolved[$key] = $this->resolveIncludeReference($value, $parentKey ? $parentKey . '.' . $key : $key, $currentDomain);
-            }
-        }
-
-        return $resolved;
-    }
-
-    /**
-     * Resolve an include reference
-     *
-     * @param string $reference Include reference string
-     * @param string $currentKey Current key being processed
-     * @param string $currentDomain Current domain being processed
-     * @return mixed Resolved value
-     */
-    private function resolveIncludeReference(
-        string $reference,
-        string $currentKey,
-        string $currentDomain
-    ): mixed
-    {
-        // Create a unique key for this reference to detect circular references
-        $uniqueKey = $currentDomain . '|' . $currentKey . '|' . $reference;
-
-        // Check for circular references
-        if (isset($this->processingKeys[$uniqueKey])) {
-            // Return the original reference if we detect a circular reference
-            return $reference;
-        }
-
-        // Mark this key as being processed
-        $this->processingKeys[$uniqueKey] = true;
-
-        try {
-            // Extract domain and key from reference
-            $refDomain = $this->extractDomain($reference);
-            $refKey = $this->extractKey($reference);
-
-            // Find the referenced domain
-            $foundDomain = $this->findDomain($refDomain);
-
-            if (!$foundDomain) {
-                // If domain not found, return the original reference
-                return $reference;
-            }
-
-            // Handle same key wildcard
-            if ($refKey === self::DOMAIN_SAME_KEY_WILDCARD) {
-                // Extract the last part of the current key for wildcard replacement
-                $keyParts = explode(self::KEYS_SEPARATOR, $currentKey);
-                $lastKeyPart = end($keyParts);
-                
-                // Reconstruct the parent path if it exists
-                $parentPath = '';
-                if (count($keyParts) > 1) {
-                    // Remove the last part (which is the key name)
-                    array_pop($keyParts);
-                    // Build the parent path
-                    $parentPath = implode(self::KEYS_SEPARATOR, $keyParts) . self::KEYS_SEPARATOR;
-                }
-                
-                // First try to find the key with the same path structure in the target domain
-                $value = $this->getValue($foundDomain, $currentKey);
-                
-                // If not found with the same structure, try just the key name
-                if ($value === null) {
-                    $value = $this->getValue($foundDomain, $lastKeyPart);
-                }
-                
-                // If still not found, try with parent paths in the target domain
-                if ($value === null && $parentPath) {
-                    // Try to find a matching key in any parent structure
-                    foreach ($this->getPossibleParentPaths($foundDomain, $lastKeyPart) as $possiblePath) {
-                        $value = $this->getValue($foundDomain, $possiblePath);
-                        if ($value !== null) {
-                            break;
-                        }
-                    }
-                }
-                
-                // If we found a value, return it
-                if ($value !== null) {
-                    return $value;
-                }
-                
-                // If no value found, use the last key part as the reference key
-                $refKey = $lastKeyPart;
-            }
-
-            // Get the value from the referenced domain
-            $value = $this->getValue($foundDomain, $refKey);
-
-            if ($value === null) {
-                // If key not found, return the original reference
-                return $reference;
-            }
-
-            // If the value is itself a reference, resolve it recursively
-            if (is_string($value) && $this->isIncludeReference($value)) {
-                return $this->resolveIncludeReference($value, $refKey, $foundDomain);
-            }
-
-            // If the value is an array, return it directly
-            return $value;
-
-        } finally {
-            // Remove this key from processing
-            unset($this->processingKeys[$uniqueKey]);
-        }
-    }
-    
-    /**
-     * Get all possible parent paths for a key in a domain
-     *
-     * @param string $domain Domain to search in
-     * @param string $key Key to find
-     * @return array List of possible paths
-     */
-    private function getPossibleParentPaths(string $domain, string $key): array
-    {
-        if (!isset($this->domains[$domain]) || !is_array($this->domains[$domain])) {
-            return [];
-        }
-        
-        $paths = [];
-        $this->findKeyInArray($this->domains[$domain], $key, '', $paths);
-        return $paths;
-    }
-    
-    /**
-     * Recursively find a key in an array and build paths to it
-     *
-     * @param array $array Array to search in
-     * @param string $searchKey Key to find
-     * @param string $currentPath Current path being built
-     * @param array &$paths Found paths (passed by reference)
-     */
-    private function findKeyInArray(array $array, string $searchKey, string $currentPath, array &$paths): void
-    {
-        foreach ($array as $key => $value) {
-            $path = $currentPath ? $currentPath . self::KEYS_SEPARATOR . $key : $key;
-            
-            if ($key === $searchKey) {
-                $paths[] = $path;
-            }
-            
-            if (is_array($value)) {
-                $this->findKeyInArray($value, $searchKey, $path, $paths);
-            }
-        }
     }
 
     /**
@@ -410,111 +108,97 @@ class YamlIncludeResolver
     /**
      * Get a value from a domain using a dot-notation key
      *
-     * @param string $domain Domain name
      * @param string $key Dot-notation key
+     * @param string|null $domain Domain name
      * @return mixed Value or null if not found
      */
-    private function getValue(
-        string $domain,
-        string $key
+    public function getValue(
+        string $key,
+        string $domain = null
     ): mixed
     {
-        if (!isset($this->domains[$domain])) {
-            return null;
-        }
+        $default = $key;
 
-        $data = $this->domains[$domain];
+        // Extract domain from the key if not provided explicitly
+        if (is_null($domain) && $domain = $this->splitDomain($key)) {
+            $key = $this->splitId($key);
+            $domain = $this->resolveDomain($domain);
 
-        // If key is empty, return the entire domain content
-        if (empty($key)) {
-            return $data;
-        }
-
-        $keys = explode(self::KEYS_SEPARATOR, $key);
-
-        foreach ($keys as $part) {
-            if (!is_array($data) || !isset($data[$part])) {
-                return null;
+            if ($domain) {
+                $default = $domain . static::DOMAIN_SEPARATOR . $key;
             }
-            $data = $data[$part];
+        };
+
+        // Get the value from the domain using the path
+        // If we encounter a non-array element before reaching the end of the path,
+        // we'll capture the remaining path segments to append to the result
+        $keys = explode(self::KEYS_SEPARATOR, $key);
+        $data = $this->domains[$domain];
+        $remainingSegments = [];
+        foreach ($keys as $i => $k) {
+            if (is_array($data) && array_key_exists($k, $data)) {
+                $data = $data[$k];
+            } else {
+                // We've reached a point where we can't go further
+                // Collect the remaining path segments
+                $remainingSegments = array_slice($keys, $i);
+
+                if (empty($remainingSegments)) {
+                    $data = $default;
+                }
+                break;
+            }
         }
 
-        return $data;
+        $value = $data;
+
+        if (is_string($value) && $this->isIncludeReference($value)) {
+            $refDomain = $this->splitDomain($value);
+            $refKey = $this->splitId($value);
+
+            if ($refKey === self::DOMAIN_SAME_KEY_WILDCARD) {
+                $refKey = $key;
+            }
+
+            if (!empty($remainingSegments)) {
+                $refKey .= self::KEYS_SEPARATOR . implode(separator: self::KEYS_SEPARATOR, array: $remainingSegments);
+            }
+
+            // Pass the remaining segments to the recursive call
+            return $this->getValue($refKey, $refDomain);
+        }
+
+        return $value;
     }
 
-    /**
-     * Find a domain by name or with variants
-     *
-     * @param string $domain Domain name to find
-     * @return string|null Found domain or null if not found
-     */
-    private function findDomain(string $domain): ?string
+    public function splitDomain(?string $id): ?string
     {
-        // Generate domain variants
-        $variants = $this->generateDomainVariants($domain);
-
-        // Find the first matching variant
-        foreach ($variants as $variant) {
-            if (isset($this->domains[$variant])) {
-                return $variant;
-            }
+        if (strpos($id, self::DOMAIN_SEPARATOR)) {
+            return current(explode(self::DOMAIN_SEPARATOR, $id));
         }
 
         return null;
     }
 
-    /**
-     * Generate domain variants
-     *
-     * @param string $domain Base domain name
-     * @return array Array of domain variants
-     */
-    private function generateDomainVariants(string $domain): array
+    public function splitId(string $id): ?string
     {
-        // Ensure domain has prefix
-        if (!str_starts_with($domain, self::DOMAIN_PREFIX)) {
-            $domain = self::DOMAIN_PREFIX . $domain;
+        if (strpos($id, self::DOMAIN_SEPARATOR)) {
+            $exp = explode(self::DOMAIN_SEPARATOR, $id);
+
+            return end($exp);
         }
 
-        return [
-            $domain,
-            self::DOMAIN_PREFIX . $domain,
-        ];
+        return $id;
     }
 
-    /**
-     * Remove the domain prefix
-     *
-     * @param string $domain Domain with prefix
-     * @return string Domain without prefix
-     */
-    private function trimDomain(string $domain): string
+    public function resolveDomain(string $domain): ?string
     {
         if (str_starts_with($domain, self::DOMAIN_PREFIX)) {
-            return substr($domain, strlen(self::DOMAIN_PREFIX));
+            if (isset($this->domainsStack[$domain])) {
+                return $domain;
+            }
         }
+
         return $domain;
-    }
-
-    /**
-     * Get the resolved content for a specific domain
-     *
-     * @param string $domain Domain name
-     * @return array|null Resolved content or null if domain not found
-     */
-    public function getResolvedContent(string $domain): ?array
-    {
-        $foundDomain = $this->findDomain($domain);
-        return $foundDomain ? $this->domains[$foundDomain] : null;
-    }
-
-    /**
-     * Get all resolved domains
-     *
-     * @return array All resolved domains
-     */
-    public function getAllResolvedContent(): array
-    {
-        return $this->domains;
     }
 }
