@@ -1,0 +1,41 @@
+# Configuration des fonctionnalités
+
+# Fonctionnalité 1
+feature_one:
+  name: "Feature One"
+  description: "First advanced feature"
+  version: 1.2.0
+  options:
+    cache: true
+    compression: gzip
+    throttling:
+      enabled: true
+      rate: 100
+      period: 60
+
+# Fonctionnalité 2
+feature_two:
+  name: "Feature Two"
+  description: "Second advanced feature"
+  version: 0.9.0
+  settings:
+    timeout: 60
+    retry: 5
+    options:
+      cache: false
+      compression: none
+      throttling:
+        enabled: false
+
+# Fonctionnalité 3 avec extension
+feature_three:
+  ~extends: '@features::feature_one'
+  name: "Feature Three"
+  description: "Extended feature"
+  version: 1.0.0
+
+# Fonctionnalité avec références imbriquées
+feature_nested:
+  name: "Nested Feature"
+  config: '@config::config_group.features.feature_one'
+  security: '@security::authentication'

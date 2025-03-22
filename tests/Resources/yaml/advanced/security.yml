@@ -1,0 +1,36 @@
+# Fichier de configuration de sécurité
+
+# Informations d'identification pour la base de données
+database:
+  credentials:
+    username: db_user
+    password: secret_password
+
+# Paramètres de sécurité
+security_settings:
+  encryption: AES-256
+  salt: random_salt_value
+  iterations: 10000
+
+# Paramètres d'authentification
+authentication:
+  jwt:
+    secret: jwt_secret_key
+    expiration: 3600
+    refresh: true
+  oauth:
+    providers:
+      google:
+        client_id: google_client_id
+        client_secret: google_client_secret
+      facebook:
+        client_id: facebook_client_id
+        client_secret: facebook_client_secret
+
+# Règles de mot de passe
+password_policy:
+  min_length: 8
+  require_uppercase: true
+  require_number: true
+  require_special: true
+  max_age_days: 90

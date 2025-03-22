@@ -1,0 +1,41 @@
+# Configuration commune
+
+# Paramu00e8tres de l'application
+app:
+  environment: development
+  debug: true
+  timezone: Europe/Paris
+  locale: fr_FR
+
+# Paramu00e8tres de cache
+cache:
+  enabled: true
+  driver: redis
+  ttl: 3600
+  prefix: app_cache_
+
+# Paramu00e8tres de journalisation
+logging:
+  enabled: true
+  level: debug
+  rotation:
+    max_files: 7
+    max_size: "5M"
+    frequency: daily
+
+# Paramu00e8tres ru00e9seau
+network:
+  timeout: 30
+  retry: 3
+  proxy: null
+
+# Valeur duplicative pour tester la ru00e9solution ambigu00fce
+ambiguous_key: "Valeur dans common"
+
+# Groupe avec une clu00e9 ambigu00fce
+group_one:
+  ambiguous_key: "Valeur dans group_one"
+
+# Autre groupe avec une clu00e9 ambigu00fce
+group_two:
+  ambiguous_key: "Valeur dans group_two"

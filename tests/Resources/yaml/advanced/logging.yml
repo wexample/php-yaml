@@ -1,0 +1,44 @@
+# Configuration de journalisation
+
+# Format de journalisation par du00e9faut
+format: "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n"
+
+# Niveaux de journalisation disponibles
+levels:
+  debug: 100
+  info: 200
+  notice: 250
+  warning: 300
+  error: 400
+  critical: 500
+  alert: 550
+  emergency: 600
+
+# Configuration des canaux
+channels:
+  app:
+    handlers: [file, console]
+    level: debug
+  security:
+    handlers: [file, database]
+    level: info
+  api:
+    handlers: [file]
+    level: info
+
+# Configuration des gestionnaires
+handlers:
+  file:
+    type: stream
+    path: /var/log/app.log
+  console:
+    type: console
+  database:
+    type: database
+    table: logs
+
+# Configuration de la rotation des journaux
+rotation:
+  max_files: 10
+  max_size: "10M"
+  frequency: daily
