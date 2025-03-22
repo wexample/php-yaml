@@ -129,11 +129,6 @@ class YamlIncludeResolver
         foreach ($this->domains as $domain => $content) {
             $this->domains[$domain] = $this->resolveFileIncludes($content, $domain);
         }
-        
-        // Third pass: resolve wildcard references
-        foreach ($this->domains as $domain => $content) {
-            $this->domains[$domain] = $this->resolveWildcardReferences($content, $domain);
-        }
     }
 
     /**
@@ -220,37 +215,6 @@ class YamlIncludeResolver
     }
 
     /**
-     * Resolve wildcard references in a single file content
-     *
-     * @param array $content YAML content
-     * @param string $currentDomain Current domain being processed
-     * @param string $parentKey Parent key path (for nested structures)
-     * @return array Resolved content
-     * @throws Exception If there are missing domains
-     */
-    private function resolveWildcardReferences(array $content, string $currentDomain, string $parentKey = ''): array
-    {
-        $resolved = [];
-        
-        foreach ($content as $key => $value) {
-            $fullKey = $parentKey ? $parentKey . '.' . $key : $key;
-            
-            if (is_array($value)) {
-                // Recursively process nested arrays
-                $resolved[$key] = $this->resolveWildcardReferences($value, $currentDomain, $fullKey);
-            } elseif (is_string($value) && $this->isWildcardReference($value)) {
-                // Resolve wildcard reference
-                $resolved[$key] = $this->resolveWildcardReference($value, $fullKey, $currentDomain);
-            } else {
-                // Keep as is
-                $resolved[$key] = $value;
-            }
-        }
-
-        return $resolved;
-    }
-
-    /**
      * Resolve an include reference
      *
      * @param string $reference Include reference string
@@ -260,9 +224,6 @@ class YamlIncludeResolver
      */
     private function resolveIncludeReference(string $reference, string $currentKey, string $currentDomain)
     {
-        // Debug output to see what's happening with the reference
-        echo "\nResolving reference: {$reference} for key: {$currentKey} in domain: {$currentDomain}\n";
-        
         // Create a unique key for this reference to detect circular references
         $uniqueKey = $currentDomain . '|' . $currentKey . '|' . $reference;
         
@@ -279,13 +240,9 @@ class YamlIncludeResolver
             // Extract domain and key from reference
             $refDomain = $this->extractDomain($reference);
             $refKey = $this->extractKey($reference);
-            
-            echo "Extracted domain: {$refDomain}, key: {$refKey}\n";
 
             // Find the referenced domain
             $foundDomain = $this->findDomain($refDomain);
-            
-            echo "Found domain: " . ($foundDomain ?: 'null') . "\n";
 
             if (!$foundDomain) {
                 // If domain not found, return the original reference
@@ -297,14 +254,12 @@ class YamlIncludeResolver
                 // Extract the last part of the current key for wildcard replacement
                 $keyParts = explode(self::KEYS_SEPARATOR, $currentKey);
                 $refKey = end($keyParts);
-                echo "Wildcard detected, using key: {$refKey}\n";
                 
                 // Special case for include_group_short_notation
                 if ($refKey === 'include_group_short_notation') {
                     // Try to find the key in the simple_group
                     $value = $this->getValue($foundDomain, 'simple_group.include_group_short_notation');
                     if ($value !== null) {
-                        echo "Special case: found include_group_short_notation in simple_group\n";
                         return $value;
                     }
                 }
@@ -312,8 +267,6 @@ class YamlIncludeResolver
 
             // Get the value from the referenced domain
             $value = $this->getValue($foundDomain, $refKey);
-            
-            echo "Value type: " . (is_array($value) ? 'array' : (is_string($value) ? 'string: ' . $value : gettype($value))) . "\n";
 
             if ($value === null) {
                 // If key not found, return the original reference
@@ -322,74 +275,12 @@ class YamlIncludeResolver
 
             // If the value is itself a reference, resolve it recursively
             if (is_string($value) && $this->isIncludeReference($value)) {
-                echo "Value is a reference, resolving recursively\n";
                 return $this->resolveIncludeReference($value, $refKey, $foundDomain);
             }
             
             // If the value is an array, return it directly
             if (is_array($value)) {
-                echo "Value is an array, returning directly\n";
                 return $value;
-            }
-
-            return $value;
-        } finally {
-            // Remove this key from processing
-            unset($this->processingKeys[$uniqueKey]);
-        }
-    }
-
-    /**
-     * Resolve a wildcard reference
-     *
-     * @param string $reference Wildcard reference string
-     * @param string $currentKey Current key being processed
-     * @param string $currentDomain Current domain being processed
-     * @return mixed Resolved value
-     */
-    private function resolveWildcardReference(string $reference, string $currentKey, string $currentDomain)
-    {
-        // Create a unique key for this reference to detect circular references
-        $uniqueKey = $currentDomain . '|' . $currentKey . '|' . $reference;
-        
-        // Check for circular references
-        if (isset($this->processingKeys[$uniqueKey])) {
-            // Return the original reference if we detect a circular reference
-            return $reference;
-        }
-        
-        // Mark this key as being processed
-        $this->processingKeys[$uniqueKey] = true;
-        
-        try {
-            // Extract domain and key from reference
-            $refDomain = $this->extractDomain($reference);
-            $refKey = $this->extractKey($reference);
-
-            // Find the referenced domain
-            $foundDomain = $this->findDomain($refDomain);
-
-            if (!$foundDomain) {
-                // If domain not found, return the original reference
-                return $reference;
-            }
-
-            // Get the value from the referenced domain
-            $value = $this->getValue($foundDomain, $refKey);
-
-            if ($value === null) {
-                // If key not found, return the original reference
-                return $reference;
-            }
-
-            // If the value is itself a reference, resolve it recursively
-            if (is_string($value) && $this->isWildcardReference($value)) {
-                return $this->resolveWildcardReference($value, $refKey, $foundDomain);
-            }
-            
-            // If the value is an array, resolve includes within it
-            if (is_array($value)) {
-                return $this->resolveWildcardReferences($value, $foundDomain, $refKey);
             }
 
             return $value;
@@ -409,17 +300,6 @@ class YamlIncludeResolver
     {
         return str_starts_with($string, self::DOMAIN_PREFIX) && 
                strpos($string, self::DOMAIN_SEPARATOR) !== false;
-    }
-
-    /**
-     * Check if a string is a wildcard reference
-     *
-     * @param string $string String to check
-     * @return bool True if the string is a wildcard reference
-     */
-    private function isWildcardReference(string $string): bool
-    {
-        return strpos($string, self::DOMAIN_SAME_KEY_WILDCARD) !== false;
     }
 
     /**
