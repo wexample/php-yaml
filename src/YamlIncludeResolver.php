@@ -10,27 +10,27 @@ class YamlIncludeResolver
     /**
      * Prefix for domain references in YAML files
      */
-    final public const DOMAIN_PREFIX = '@';
+    final public const string DOMAIN_PREFIX = '@';
 
     /**
      * Separator between domain and key in references
      */
-    final public const DOMAIN_SEPARATOR = '::';
+    final public const string DOMAIN_SEPARATOR = '::';
 
     /**
      * Wildcard to reference the same key in another domain
      */
-    final public const DOMAIN_SAME_KEY_WILDCARD = '%';
+    final public const string DOMAIN_SAME_KEY_WILDCARD = '%';
 
     /**
      * Key used for extending another YAML file
      */
-    final public const FILE_EXTENDS = '~extends';
+    final public const string FILE_EXTENDS = '~extends';
 
     /**
      * Separator for nested keys
      */
-    final public const KEYS_SEPARATOR = '.';
+    final public const string KEYS_SEPARATOR = '.';
 
     /**
      * Loaded YAML files by domain
@@ -55,13 +55,13 @@ class YamlIncludeResolver
     ): void
     {
         if (!file_exists($filePath)) {
-            throw new Exception("YAML file not found: {$filePath}");
+            throw new Exception("YAML file not found: $filePath");
         }
 
         $content = Yaml::parseFile($filePath);
 
         if (!is_array($content)) {
-            throw new Exception("Invalid YAML content in file: {$filePath}");
+            throw new Exception("Invalid YAML content in file: $filePath");
         }
 
         // Ensure domain has the prefix
@@ -85,7 +85,7 @@ class YamlIncludeResolver
     ): void
     {
         if (!is_dir($directory)) {
-            throw new Exception("Directory not found: {$directory}");
+            throw new Exception("Directory not found: $directory");
         }
 
         // Get all YAML files in the directory
@@ -152,7 +152,7 @@ class YamlIncludeResolver
     {
         // Check for circular references
         if (in_array($currentDomain, $processedDomains)) {
-            throw new Exception("Circular reference detected in extends: {$currentDomain}");
+            throw new Exception("Circular reference detected in extends: $currentDomain");
         }
 
         // Add current domain to processed domains
@@ -177,7 +177,7 @@ class YamlIncludeResolver
                 // Merge with current content (current content takes precedence)
                 $content = array_merge($extendsContent, $content);
             } else {
-                throw new Exception("Unable to extend domain that does not exist: {$extendsDomainRaw}");
+                throw new Exception("Unable to extend domain that does not exist: $extendsDomainRaw");
             }
         }
 
@@ -238,7 +238,7 @@ class YamlIncludeResolver
         string $reference,
         string $currentKey,
         string $currentDomain
-    )
+    ): mixed
     {
         // Create a unique key for this reference to detect circular references
         $uniqueKey = $currentDomain . '|' . $currentKey . '|' . $reference;
@@ -312,7 +312,7 @@ class YamlIncludeResolver
     private function isIncludeReference(string $string): bool
     {
         return str_starts_with($string, self::DOMAIN_PREFIX) &&
-            strpos($string, self::DOMAIN_SEPARATOR) !== false;
+            str_contains($string, self::DOMAIN_SEPARATOR);
     }
 
     /**
@@ -349,7 +349,7 @@ class YamlIncludeResolver
     private function getValue(
         string $domain,
         string $key
-    )
+    ): mixed
     {
         if (!isset($this->domains[$domain])) {
             return null;
