@@ -269,16 +269,43 @@ class YamlIncludeResolver
             if ($refKey === self::DOMAIN_SAME_KEY_WILDCARD) {
                 // Extract the last part of the current key for wildcard replacement
                 $keyParts = explode(self::KEYS_SEPARATOR, $currentKey);
-                $refKey = end($keyParts);
-
-                // Special case for include_group_short_notation
-                if ($refKey === 'include_group_short_notation') {
-                    // Try to find the key in the simple_group
-                    $value = $this->getValue($foundDomain, 'simple_group.include_group_short_notation');
-                    if ($value !== null) {
-                        return $value;
+                $lastKeyPart = end($keyParts);
+                
+                // Reconstruct the parent path if it exists
+                $parentPath = '';
+                if (count($keyParts) > 1) {
+                    // Remove the last part (which is the key name)
+                    array_pop($keyParts);
+                    // Build the parent path
+                    $parentPath = implode(self::KEYS_SEPARATOR, $keyParts) . self::KEYS_SEPARATOR;
+                }
+                
+                // First try to find the key with the same path structure in the target domain
+                $value = $this->getValue($foundDomain, $currentKey);
+                
+                // If not found with the same structure, try just the key name
+                if ($value === null) {
+                    $value = $this->getValue($foundDomain, $lastKeyPart);
+                }
+                
+                // If still not found, try with parent paths in the target domain
+                if ($value === null && $parentPath) {
+                    // Try to find a matching key in any parent structure
+                    foreach ($this->getPossibleParentPaths($foundDomain, $lastKeyPart) as $possiblePath) {
+                        $value = $this->getValue($foundDomain, $possiblePath);
+                        if ($value !== null) {
+                            break;
+                        }
                     }
                 }
+                
+                // If we found a value, return it
+                if ($value !== null) {
+                    return $value;
+                }
+                
+                // If no value found, use the last key part as the reference key
+                $refKey = $lastKeyPart;
             }
 
             // Get the value from the referenced domain
@@ -300,6 +327,47 @@ class YamlIncludeResolver
         } finally {
             // Remove this key from processing
             unset($this->processingKeys[$uniqueKey]);
+        }
+    }
+    
+    /**
+     * Get all possible parent paths for a key in a domain
+     *
+     * @param string $domain Domain to search in
+     * @param string $key Key to find
+     * @return array List of possible paths
+     */
+    private function getPossibleParentPaths(string $domain, string $key): array
+    {
+        if (!isset($this->domains[$domain]) || !is_array($this->domains[$domain])) {
+            return [];
+        }
+        
+        $paths = [];
+        $this->findKeyInArray($this->domains[$domain], $key, '', $paths);
+        return $paths;
+    }
+    
+    /**
+     * Recursively find a key in an array and build paths to it
+     *
+     * @param array $array Array to search in
+     * @param string $searchKey Key to find
+     * @param string $currentPath Current path being built
+     * @param array &$paths Found paths (passed by reference)
+     */
+    private function findKeyInArray(array $array, string $searchKey, string $currentPath, array &$paths): void
+    {
+        foreach ($array as $key => $value) {
+            $path = $currentPath ? $currentPath . self::KEYS_SEPARATOR . $key : $key;
+            
+            if ($key === $searchKey) {
+                $paths[] = $path;
+            }
+            
+            if (is_array($value)) {
+                $this->findKeyInArray($value, $searchKey, $path, $paths);
+            }
         }
     }
 
