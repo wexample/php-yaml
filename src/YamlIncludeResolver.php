@@ -123,21 +123,29 @@ class YamlIncludeResolver
         if (is_null($domain) && $domain = $this->splitDomain($key)) {
             $key = $this->splitId($key);
             $domain = $this->resolveDomain($domain);
-
-            if ($domain) {
-                $default = $domain . static::DOMAIN_SEPARATOR . $key;
-            }
         };
+
+        if ($domain) {
+            $default = $domain . static::DOMAIN_SEPARATOR . $key;
+        }
 
         // Get the value from the domain using the path
         // If we encounter a non-array element before reaching the end of the path,
         // we'll capture the remaining path segments to append to the result
         $keys = explode(self::KEYS_SEPARATOR, $key);
-        $data = $this->domains[$domain];
+
+        if (!$data = $this->domains[$domain] ?? null) {
+            return $default;
+        }
+
         $remainingSegments = [];
         foreach ($keys as $i => $k) {
-            if (is_array($data) && array_key_exists($k, $data)) {
-                $data = $data[$k];
+            if (is_array($data)) {
+                if (array_key_exists($k, $data)) {
+                    $data = $data[$k];
+                } else {
+                    $data = $default;
+                }
             } else {
                 // We've reached a point where we can't go further
                 // Collect the remaining path segments
@@ -152,10 +160,9 @@ class YamlIncludeResolver
 
         $value = $data;
 
-        if (is_string($value) && $this->isIncludeReference($value)) {
+        if (is_string($value) && $value !== $default && $this->isIncludeReference($value)) {
             $refDomain = $this->splitDomain($value);
             $refKey = $this->splitId($value);
-
             if ($refKey === self::DOMAIN_SAME_KEY_WILDCARD) {
                 $refKey = $key;
             }
