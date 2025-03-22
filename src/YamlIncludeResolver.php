@@ -89,7 +89,11 @@ class YamlIncludeResolver
             throw new Exception("Directory not found: {$directory}");
         }
 
-        $files = glob($directory . '/*.{yml,yaml}', GLOB_BRACE | 0);
+        // Get all YAML files in the directory
+        $files = [];
+        foreach (['yml', 'yaml'] as $ext) {
+            $files = array_merge($files, glob($directory . '/*.' . $ext));
+        }
         
         foreach ($files as $file) {
             $basename = pathinfo($file, PATHINFO_FILENAME);
@@ -98,12 +102,14 @@ class YamlIncludeResolver
         }
 
         // Process subdirectories
-        $subdirs = glob($directory . '/*', GLOB_ONLYDIR | 0);
+        $subdirs = array_filter(scandir($directory), function($item) use ($directory) {
+            return $item !== '.' && $item !== '..' && is_dir($directory . '/' . $item);
+        });
         
         foreach ($subdirs as $subdir) {
-            $basename = basename($subdir);
+            $basename = $subdir;
             $newPrefix = $domainPrefix ? $domainPrefix . '.' . $basename : $basename;
-            $this->registerDirectory($subdir, $newPrefix);
+            $this->registerDirectory($directory . '/' . $subdir, $newPrefix);
         }
     }
 
