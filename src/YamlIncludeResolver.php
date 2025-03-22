@@ -38,6 +38,11 @@ class YamlIncludeResolver
     private array $domains = [];
 
     /**
+     * Processed keys during resolution to detect circular references
+     */
+    private array $processingKeys = [];
+
+    /**
      * Constructor
      */
     public function __construct()
@@ -84,7 +89,7 @@ class YamlIncludeResolver
             throw new Exception("Directory not found: {$directory}");
         }
 
-        $files = glob($directory . '/*.{yml,yaml}', GLOB_BRACE);
+        $files = glob($directory . '/*.{yml,yaml}', GLOB_BRACE | 0);
         
         foreach ($files as $file) {
             $basename = pathinfo($file, PATHINFO_FILENAME);
@@ -93,7 +98,7 @@ class YamlIncludeResolver
         }
 
         // Process subdirectories
-        $subdirs = glob($directory . '/*', GLOB_ONLYDIR);
+        $subdirs = glob($directory . '/*', GLOB_ONLYDIR | 0);
         
         foreach ($subdirs as $subdir) {
             $basename = basename($subdir);
@@ -109,13 +114,19 @@ class YamlIncludeResolver
      */
     public function resolveIncludes(): void
     {
+        // First pass: resolve extends
+        foreach ($this->domains as $domain => $content) {
+            $this->domains[$domain] = $this->resolveExtends($content, $domain);
+        }
+        
+        // Second pass: resolve includes
         foreach ($this->domains as $domain => $content) {
             $this->domains[$domain] = $this->resolveFileIncludes($content, $domain);
         }
     }
 
     /**
-     * Resolve includes in a single file content
+     * Resolve extends in a file
      *
      * @param array $content YAML content
      * @param string $currentDomain Current domain being processed
@@ -123,11 +134,11 @@ class YamlIncludeResolver
      * @return array Resolved content
      * @throws Exception If there are circular references or missing domains
      */
-    private function resolveFileIncludes(array $content, string $currentDomain, array $processedDomains = []): array
+    private function resolveExtends(array $content, string $currentDomain, array $processedDomains = []): array
     {
         // Check for circular references
         if (in_array($currentDomain, $processedDomains)) {
-            throw new Exception("Circular reference detected in domain: {$currentDomain}");
+            throw new Exception("Circular reference detected in extends: {$currentDomain}");
         }
 
         // Add current domain to processed domains
@@ -143,7 +154,7 @@ class YamlIncludeResolver
 
             if ($extendsDomain) {
                 // Resolve extends domain first
-                $extendsContent = $this->resolveFileIncludes(
+                $extendsContent = $this->resolveExtends(
                     $this->domains[$extendsDomain],
                     $extendsDomain,
                     $processedDomains
@@ -156,16 +167,28 @@ class YamlIncludeResolver
             }
         }
 
-        // Process all values in the content
+        return $content;
+    }
+
+    /**
+     * Resolve includes in a single file content
+     *
+     * @param array $content YAML content
+     * @param string $currentDomain Current domain being processed
+     * @return array Resolved content
+     * @throws Exception If there are missing domains
+     */
+    private function resolveFileIncludes(array $content, string $currentDomain): array
+    {
         $resolved = [];
         
         foreach ($content as $key => $value) {
             if (is_array($value)) {
                 // Recursively process nested arrays
-                $resolved[$key] = $this->resolveFileIncludes($value, $currentDomain, $processedDomains);
+                $resolved[$key] = $this->resolveFileIncludes($value, $currentDomain);
             } elseif (is_string($value) && $this->isIncludeReference($value)) {
                 // Resolve include reference
-                $resolved[$key] = $this->resolveIncludeReference($value, $key, $currentDomain, $processedDomains);
+                $resolved[$key] = $this->resolveIncludeReference($value, $key, $currentDomain);
             } else {
                 // Keep as is
                 $resolved[$key] = $value;
@@ -181,43 +204,63 @@ class YamlIncludeResolver
      * @param string $reference Include reference string
      * @param string $currentKey Current key being processed
      * @param string $currentDomain Current domain being processed
-     * @param array $processedDomains Domains already processed
      * @return mixed Resolved value
-     * @throws Exception If the reference is invalid or points to a non-existent domain/key
      */
-    private function resolveIncludeReference(string $reference, string $currentKey, string $currentDomain, array $processedDomains)
+    private function resolveIncludeReference(string $reference, string $currentKey, string $currentDomain)
     {
-        // Extract domain and key from reference
-        $refDomain = $this->extractDomain($reference);
-        $refKey = $this->extractKey($reference);
-
-        // Handle same key wildcard
-        if ($refKey === self::DOMAIN_SAME_KEY_WILDCARD) {
-            $refKey = $currentKey;
-        }
-
-        // Find the referenced domain
-        $foundDomain = $this->findDomain($refDomain);
-
-        if (!$foundDomain) {
-            // If domain not found, return the original reference
+        // Create a unique key for this reference to detect circular references
+        $uniqueKey = $currentDomain . '|' . $currentKey . '|' . $reference;
+        
+        // Check for circular references
+        if (isset($this->processingKeys[$uniqueKey])) {
+            // Return the original reference if we detect a circular reference
             return $reference;
         }
+        
+        // Mark this key as being processed
+        $this->processingKeys[$uniqueKey] = true;
+        
+        try {
+            // Extract domain and key from reference
+            $refDomain = $this->extractDomain($reference);
+            $refKey = $this->extractKey($reference);
 
-        // Get the value from the referenced domain
-        $value = $this->getValue($foundDomain, $refKey);
+            // Handle same key wildcard
+            if ($refKey === self::DOMAIN_SAME_KEY_WILDCARD) {
+                $refKey = $currentKey;
+            }
 
-        if ($value === null) {
-            // If key not found, return the original reference
-            return $reference;
+            // Find the referenced domain
+            $foundDomain = $this->findDomain($refDomain);
+
+            if (!$foundDomain) {
+                // If domain not found, return the original reference
+                return $reference;
+            }
+
+            // Get the value from the referenced domain
+            $value = $this->getValue($foundDomain, $refKey);
+
+            if ($value === null) {
+                // If key not found, return the original reference
+                return $reference;
+            }
+
+            // If the value is itself a reference, resolve it recursively
+            if (is_string($value) && $this->isIncludeReference($value)) {
+                return $this->resolveIncludeReference($value, $refKey, $foundDomain);
+            }
+            
+            // If the value is an array, resolve includes within it
+            if (is_array($value)) {
+                return $this->resolveFileIncludes($value, $foundDomain);
+            }
+
+            return $value;
+        } finally {
+            // Remove this key from processing
+            unset($this->processingKeys[$uniqueKey]);
         }
-
-        // If the value is itself a reference, resolve it recursively
-        if (is_string($value) && $this->isIncludeReference($value)) {
-            return $this->resolveIncludeReference($value, $refKey, $foundDomain, $processedDomains);
-        }
-
-        return $value;
     }
 
     /**
