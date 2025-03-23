@@ -41,47 +41,60 @@ class YamlIncludeResolver
     /**
      * Scans a directory for YAML files and registers them
      *
-     * @param string $pathTranslations Directory path to scan for YAML files
+     * @param string $relativeBasePath Directory path to scan for YAML files
      * @param string|null $aliasPrefix Optional prefix for the domain names
      * @throws Exception If a file can't be registered
      */
     public function scanDirectory(
-        string $pathTranslations
-    ): void
+        string $relativeBasePath
+    ): array
     {
         // Use the FileHelper to scan the directory for YAML files
-        FileHelper::scanDirectoryForFiles(
-            $pathTranslations,
+        return FileHelper::scanDirectoryForFiles(
+            $relativeBasePath,
             FileHelper::FILE_EXTENSION_YML,
             function (
-                \SplFileInfo $file
+                \SplFileInfo $fileInfo
             ) use
             (
-                $pathTranslations
-            ) {
-                $exp = explode('.', $file->getFilename());
-
-                // Build the domain from the file path
-                $domain = [];
-
-                $relativePath = FileHelper::buildRelativePath(
-                    $file->getPath(),
-                    dirname($pathTranslations)
-                );
-
-                // If we have a relative path, use it to build the domain
-                if ($relativePath) {
-                    $domain = explode('/', $relativePath);
-                }
-
-                // Append file name to the domain parts
-                $domain[] = $exp[0];
-                $domain = implode(self::KEYS_SEPARATOR, $domain);
+                $relativeBasePath
+            ): \SplFileInfo {
 
                 // Register the file
-                $this->registerFile($domain, $file->getPathname());
+                $this->registerFile($this->buildDomainFromFile(
+                    fileInfo: $fileInfo,
+                    relativeBasePath: $relativeBasePath
+                ), $fileInfo->getPathname());
+
+                return $fileInfo;
             }
         );
+    }
+
+    public function buildDomainFromFile(
+        \SplFileInfo $fileInfo,
+        string $relativeBasePath
+    ): string
+    {
+        $exp = explode('.', $fileInfo->getFilename());
+
+        // Build the domain from the file path
+        $domain = [];
+
+        $relativePath = FileHelper::buildRelativePath(
+            $fileInfo->getPath(),
+            dirname($relativeBasePath)
+        );
+
+        // If we have a relative path, use it to build the domain
+        if ($relativePath) {
+            $domain = explode('/', $relativePath);
+        }
+
+        // Append file name to the domain parts
+        $domain[] = $exp[0];
+
+        return implode(self::KEYS_SEPARATOR, $domain);
     }
 
     /**
