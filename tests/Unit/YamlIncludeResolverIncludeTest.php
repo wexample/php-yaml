@@ -3,26 +3,21 @@
 namespace Wexample\PhpYaml\Tests\Unit;
 
 use Exception;
-use PHPUnit\Framework\TestCase;
-use Wexample\PhpYaml\YamlIncludeResolver;
+use Wexample\PhpYaml\Test\AbstractYamlIncludeResolverTest;
 
-class YamlIncludeResolverIncludeTest extends TestCase
+class YamlIncludeResolverIncludeTest extends AbstractYamlIncludeResolverTest
 {
-    private YamlIncludeResolver $resolver;
-    private string $resourcesPath;
 
     /**
      * @throws Exception
      */
     protected function setUp(): void
     {
-        $this->resolver = new YamlIncludeResolver();
-        $this->resourcesPath = dirname(__DIR__) . '/Resources/yaml';
+        parent::setUp();
 
         // Register test YAML files
         $this->resolver->registerFile('@domain.one', $this->resourcesPath . '/domain/one.yml');
         $this->resolver->registerFile('@domain.two', $this->resourcesPath . '/domain/two.yml');
-        $this->resolver->registerFile('@domain.three', $this->resourcesPath . '/domain/three.yml');
     }
 
     public function testSimpleValues()
