@@ -18,6 +18,7 @@ composer require wexample/php-yaml
 - Complete YAML file inheritance with `~extends: @domain`
 - Support for nested paths with dot notation (`key.subkey.value`)
 - High-performance multi-level caching system for optimized lookups
+- Batch processing of multiple values with automatic reference resolution
 
 ## Usage
 
@@ -38,6 +39,24 @@ $value = $resolver->getValue('@domain.one::some_key');
 
 // Get nested values using dot notation
 $nestedValue = $resolver->getValue('@domain.one::group.subgroup.key');
+```
+
+### Batch Processing
+
+```php
+// Process multiple values at once, resolving all references
+$translations = [
+    'key1' => 'Simple value',
+    'key2' => '@domain.one::some_key',
+    'key3' => '@domain.two::other_key',
+    'key4' => '%' // Same key wildcard
+];
+
+// Resolve all references in the array
+$resolved = $resolver->resolveValues($translations);
+
+// With a specific domain for wildcard references
+$resolved = $resolver->resolveValues($translations, '@domain.two');
 ```
 
 ### YAML File Format
@@ -95,6 +114,9 @@ The library includes a sophisticated caching system that significantly improves 
 $value1 = $resolver->getValue('@domain.one::some_key'); // Initial lookup (slower)
 $value2 = $resolver->getValue('@domain.one::some_key'); // Cached lookup (much faster)
 
+// Batch processing also benefits from caching
+$resolved = $resolver->resolveValues($translations); // Uses cache for individual lookups
+
 // Cache is automatically invalidated when new files are registered
 $resolver->registerFile('@domain.three', '/path/to/three.yml');
 // All caches are cleared to ensure consistency
@@ -115,6 +137,23 @@ The YamlIncludeResolver class defines several constants that you can use:
 - `DOMAIN_SAME_KEY_WILDCARD`: '%' - Wildcard to reference the same key in another domain
 - `FILE_EXTENDS`: '~extends' - Key used for extending another YAML file
 - `KEYS_SEPARATOR`: '.' - Separator for nested keys
+
+### Integration with Symfony Translations
+
+This library integrates seamlessly with the Symfony Translation component through the companion package [wexample/symfony-translations](https://github.com/wexample/symfony-translations):
+
+```php
+use Wexample\PhpYaml\YamlIncludeResolver;
+use Wexample\SymfonyTranslations\Translation\Translator;
+
+// Create a resolver instance
+$resolver = new YamlIncludeResolver();
+
+// Create a translator that uses the resolver
+$translator = new Translator($resolver);
+
+// The translator will use the resolver to handle references in translation files
+```
 
 ## License
 
