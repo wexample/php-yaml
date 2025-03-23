@@ -69,7 +69,7 @@ class YamlIncludeResolver
                 $domain = [];
 
                 // If we have a relative path, use it to build the domain
-                if (isset($info->relativePath) && VariableSpecialHelper::EMPTY_STRING !== $info->relativePath) {
+                if ($info->relativePath) {
                     $domain = explode('/', $info->relativePath);
                 }
 
