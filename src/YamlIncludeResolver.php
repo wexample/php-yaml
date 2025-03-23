@@ -56,26 +56,25 @@ class YamlIncludeResolver
             $pathTranslations,
             FileHelper::FILE_EXTENSION_YML,
             function (
-                $file,
-                $info
+                \SplFileInfo $file
             ) use
             (
                 $pathTranslations,
                 $aliasPrefix
             ) {
-                $exp = explode('.', $info->filename);
+                $exp = explode('.', $file->getFilename());
 
                 // Build the domain from the file path
                 $domain = [];
 
-                $info->relativePath = FileHelper::buildRelativePath(
-                    $info->dirname,
+                $relativePath = FileHelper::buildRelativePath(
+                    $file->getPath(),
                     dirname($pathTranslations)
                 );
 
                 // If we have a relative path, use it to build the domain
-                if ($info->relativePath) {
-                    $domain = explode('/', $info->relativePath);
+                if ($relativePath) {
+                    $domain = explode('/', $relativePath);
                 }
 
                 // Append file name to the domain parts
@@ -84,7 +83,7 @@ class YamlIncludeResolver
                 $domain = $aliasPrefix ? $aliasPrefix . '.' . $domain : self::DOMAIN_PREFIX . $domain;
 
                 // Register the file
-                $this->registerFile($domain, $file);
+                $this->registerFile($domain, $file->getPathname());
             }
         );
     }
