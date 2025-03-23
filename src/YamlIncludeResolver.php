@@ -219,11 +219,10 @@ class YamlIncludeResolver
             if (is_string($value)) {
                 if ($this->isIncludeReference($value)) {
                     // Resolve the reference
-                    $resolvedValue = $this->getValue($value, $domain);
-                    $resolved[$key] = $resolvedValue;
+                    $resolved[$key] =$this->getValueResolved($value);
                 } else if ($value === self::DOMAIN_SAME_KEY_WILDCARD && $domain) {
                     // Handle wildcard references with a specific domain
-                    $resolved[$key] = $this->getValue($domain . self::DOMAIN_SEPARATOR . $key);
+                    $resolved[$key] = $this->getValue(key: $key, domain: $domain);
                 } else {
                     $resolved[$key] = $value;
                 }
@@ -235,6 +234,16 @@ class YamlIncludeResolver
         return $resolved;
     }
 
+    public function getValueResolved(
+        string $key,
+    ): mixed
+    {
+        return $this->getValue(
+            key: $this->splitKey($key),
+            domain: $this->splitDomain($key)
+        );
+    }
+
     /**
      * Get a value from a domain using a dot-notation key
      *
@@ -244,28 +253,19 @@ class YamlIncludeResolver
      */
     public function getValue(
         string $key,
-        string $domain = null
+        string $domain
     ): mixed
     {
         // Generate a cache key
-        $cacheKey = ($domain ?? '') . '|' . $key;
+        $cacheKey = $domain . '|' . $key;
 
         // Check if the value is already in cache
         if (array_key_exists($cacheKey, $this->valueCache)) {
             return $this->valueCache[$cacheKey];
         }
 
-        $default = $key;
         $found = false;
-
-        // Extract domain from the key if not provided explicitly
-        if (is_null($domain) && $domain = $this->splitDomain($key)) {
-            $key = $this->splitKey($key);
-        }
-
-        if ($domain) {
-            $default = $domain . static::DOMAIN_SEPARATOR . $key;
-        }
+        $default = $domain . static::DOMAIN_SEPARATOR . $key;
 
         // Get the value from the domain using the path
         // If we encounter a non-array element before reaching the end of the path,
