@@ -54,6 +54,16 @@ class YamlIncludeResolver
     private array $keySplitCache = [];
 
     /**
+     * Get all registered domains and their content
+     *
+     * @return array The complete registry of domains
+     */
+    public function getDomains(): array
+    {
+        return $this->domains;
+    }
+
+    /**
      * Scans a directory for YAML files and registers them
      *
      * @param string $relativeBasePath Directory path to scan for YAML files
