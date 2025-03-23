@@ -37,6 +37,9 @@ class YamlIncludeResolver
      */
     private array $domains = [];
 
+    /**
+     * Stack of domains being processed to prevent infinite recursion
+     */
     protected array $domainsStack = [];
 
     /**
@@ -124,7 +127,7 @@ class YamlIncludeResolver
         if (is_null($domain) && $domain = $this->splitDomain($key)) {
             $key = $this->splitId($key);
             $domain = $this->resolveDomain($domain);
-        };
+        }
 
         if ($domain) {
             $default = $domain . static::DOMAIN_SEPARATOR . $key;
@@ -180,27 +183,44 @@ class YamlIncludeResolver
             return $this->getValue($refKey, $refDomain);
         }
 
-        // Check if the domain has an extends directive and process it
+        // If value was not found and the domain has an extends directive,
+        // try to get the value from the parent domain
         if (!$found && is_array($data) && array_key_exists(self::FILE_EXTENDS, $data) && is_string($data[self::FILE_EXTENDS])) {
-            // Otherwise, try to get it from the parent domain
-            return $this->getValue(key: $key, domain: $data[self::FILE_EXTENDS]);
+            // The domain has an extends directive, try to get the value from the parent domain
+            // This allows for inheritance of values between domains
+            return $this->getValue(
+                key: $key,
+                domain: $data[self::FILE_EXTENDS]
+            );
         }
 
         return $value;
     }
 
+    /**
+     * Extract domain part from an identifier
+     *
+     * @param string|null $id Identifier to extract domain from
+     * @return string|null Domain part or null if not found
+     */
     public function splitDomain(?string $id): ?string
     {
-        if (strpos($id, self::DOMAIN_SEPARATOR)) {
+        if (str_contains($id, self::DOMAIN_SEPARATOR)) {
             return current(explode(self::DOMAIN_SEPARATOR, $id));
         }
 
         return null;
     }
 
+    /**
+     * Extract ID part from a domain identifier
+     *
+     * @param string $id Identifier to extract ID from
+     * @return string ID part
+     */
     public function splitId(string $id): ?string
     {
-        if (strpos($id, self::DOMAIN_SEPARATOR)) {
+        if (str_contains($id, self::DOMAIN_SEPARATOR)) {
             $exp = explode(self::DOMAIN_SEPARATOR, $id);
 
             return end($exp);
@@ -209,6 +229,12 @@ class YamlIncludeResolver
         return $id;
     }
 
+    /**
+     * Resolve a domain name, checking if it's in the domains stack
+     *
+     * @param string $domain Domain to resolve
+     * @return string|null Resolved domain
+     */
     public function resolveDomain(string $domain): ?string
     {
         if (str_starts_with($domain, self::DOMAIN_PREFIX)) {
