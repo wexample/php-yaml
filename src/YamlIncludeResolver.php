@@ -143,7 +143,7 @@ class YamlIncludeResolver
         }
 
         $this->domains[$domain] = $content;
-        
+
         // Clear caches when registering a new file
         $this->clearCaches();
     }
@@ -195,27 +195,36 @@ class YamlIncludeResolver
     }
 
     /**
-     * Resolve a collection of translations by processing include references
+     * Resolve a collection of values by processing include references
      *
-     * @param array $values Array of translations (key => value)
-     * @return array Resolved translations with references replaced by their actual values
+     * @param array $values Array of values (key => value)
+     * @param string|null $domain Default domain for the values
+     * @return array Resolved values with references replaced by their actual values
      */
     public function resolveValues(
-        array $values
+        array $values,
+        ?string $domain = null
     ): array
     {
         $resolved = [];
-        
+
         foreach ($values as $key => $value) {
-            if (is_string($value) && $this->isIncludeReference($value)) {
-                // Resolve the reference
-                $resolvedValue = $this->getValue($value);
-                $resolved[$key] = $resolvedValue;
+            if (is_string($value)) {
+                if ($this->isIncludeReference($value)) {
+                    // Resolve the reference
+                    $resolvedValue = $this->getValue($value, $domain);
+                    $resolved[$key] = $resolvedValue;
+                } else if ($value === self::DOMAIN_SAME_KEY_WILDCARD && $domain) {
+                    // Handle wildcard references with a specific domain
+                    $resolved[$key] = $this->getValue($domain . self::DOMAIN_SEPARATOR . $key);
+                } else {
+                    $resolved[$key] = $value;
+                }
             } else {
                 $resolved[$key] = $value;
             }
         }
-        
+
         return $resolved;
     }
 
@@ -233,12 +242,12 @@ class YamlIncludeResolver
     {
         // Generate a cache key
         $cacheKey = ($domain ?? '') . '|' . $key;
-        
+
         // Check if the value is already in cache
         if (array_key_exists($cacheKey, $this->valueCache)) {
             return $this->valueCache[$cacheKey];
         }
-        
+
         $default = $key;
         $found = false;
 
@@ -301,10 +310,10 @@ class YamlIncludeResolver
 
             // Pass the remaining segments to the recursive call
             $result = $this->getValue($refKey, $refDomain);
-            
+
             // Cache the result
             $this->valueCache[$cacheKey] = $result;
-            
+
             return $result;
         }
 
@@ -317,16 +326,16 @@ class YamlIncludeResolver
                 key: $key,
                 domain: $data[self::FILE_EXTENDS]
             );
-            
+
             // Cache the result
             $this->valueCache[$cacheKey] = $result;
-            
+
             return $result;
         }
 
         // Cache the result
         $this->valueCache[$cacheKey] = $value;
-        
+
         return $value;
     }
 
@@ -341,20 +350,20 @@ class YamlIncludeResolver
         if ($key === null) {
             return null;
         }
-        
+
         // Check cache first
         if (array_key_exists($key, $this->domainSplitCache)) {
             return $this->domainSplitCache[$key];
         }
-        
+
         $result = null;
         if (str_contains($key, self::DOMAIN_SEPARATOR)) {
             $result = current(explode(self::DOMAIN_SEPARATOR, $key));
         }
-        
+
         // Cache the result
         $this->domainSplitCache[$key] = $result;
-        
+
         return $result;
     }
 
@@ -370,16 +379,16 @@ class YamlIncludeResolver
         if (array_key_exists($key, $this->keySplitCache)) {
             return $this->keySplitCache[$key];
         }
-        
+
         $result = $key;
         if (str_contains($key, self::DOMAIN_SEPARATOR)) {
             $exp = explode(self::DOMAIN_SEPARATOR, $key);
             $result = end($exp);
         }
-        
+
         // Cache the result
         $this->keySplitCache[$key] = $result;
-        
+
         return $result;
     }
 }
