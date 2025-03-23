@@ -68,6 +68,11 @@ class YamlIncludeResolver
                 // Build the domain from the file path
                 $domain = [];
 
+                $info->relativePath = FileHelper::buildRelativePath(
+                    $info->dirname,
+                    dirname($pathTranslations)
+                );
+
                 // If we have a relative path, use it to build the domain
                 if ($info->relativePath) {
                     $domain = explode('/', $info->relativePath);
@@ -80,8 +85,7 @@ class YamlIncludeResolver
 
                 // Register the file
                 $this->registerFile($domain, $file);
-            },
-            dirname($pathTranslations) // Base path for calculating relative paths
+            }
         );
     }
 
