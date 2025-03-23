@@ -195,6 +195,31 @@ class YamlIncludeResolver
     }
 
     /**
+     * Resolve a collection of translations by processing include references
+     *
+     * @param array $values Array of translations (key => value)
+     * @return array Resolved translations with references replaced by their actual values
+     */
+    public function resolveValues(
+        array $values
+    ): array
+    {
+        $resolved = [];
+        
+        foreach ($values as $key => $value) {
+            if (is_string($value) && $this->isIncludeReference($value)) {
+                // Resolve the reference
+                $resolvedValue = $this->getValue($value);
+                $resolved[$key] = $resolvedValue;
+            } else {
+                $resolved[$key] = $value;
+            }
+        }
+        
+        return $resolved;
+    }
+
+    /**
      * Get a value from a domain using a dot-notation key
      *
      * @param string $key Dot-notation key
