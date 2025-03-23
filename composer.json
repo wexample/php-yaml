@@ -3,6 +3,7 @@
     "description": "A lightweight PHP library for resolving includes between YAML files",
     "type": "library",
     "license": "MIT",
+    "version": "1.0.1",
     "autoload": {
         "psr-4": {
             "Wexample\\PhpYaml\\": "src/"
