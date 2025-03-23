@@ -272,13 +272,8 @@ class YamlIncludeResolver
         // we'll capture the remaining path segments to append to the result
         $keys = explode(self::KEYS_SEPARATOR, $key);
 
-        // Remove prefix from domain when accessing domains array
-        $domainKey = $domain;
-        if (str_starts_with($domainKey, self::DOMAIN_PREFIX)) {
-            $domainKey = substr($domainKey, strlen(self::DOMAIN_PREFIX));
-        }
 
-        if (!$data = $this->domains[$domainKey] ?? null) {
+        if (!$data = $this->domains[$domain] ?? null) {
             // Cache the result
             $this->valueCache[$cacheKey] = $default;
             return $default;
@@ -292,8 +287,8 @@ class YamlIncludeResolver
                     $searchData = $searchData[$k];
                     $found = true;
                 } else {
-                    $found = false;
                     $searchData = $default;
+                    $found = false;
                 }
             } else {
                 // We've reached a point where we can't go further
@@ -312,7 +307,10 @@ class YamlIncludeResolver
 
         if (is_string($value) && $value !== $default && $this->isIncludeReference($value)) {
             $refDomain = $this->splitDomain($value);
+            $refDomain = substr($refDomain, 1);
+
             $refKey = $this->splitKey($value);
+
             if ($refKey === self::DOMAIN_SAME_KEY_WILDCARD) {
                 $refKey = $key;
             }
@@ -335,9 +333,12 @@ class YamlIncludeResolver
         if (!$found && is_array($data) && array_key_exists(self::FILE_EXTENDS, $data) && is_string($data[self::FILE_EXTENDS])) {
             // The domain has an extends directive, try to get the value from the parent domain
             // This allows for inheritance of values between domains
+            $parentDomain = $data[self::FILE_EXTENDS];
+            $parentDomain = substr($parentDomain, 1);
+
             $result = $this->getValue(
                 key: $key,
-                domain: $data[self::FILE_EXTENDS]
+                domain: $parentDomain
             );
 
             // Cache the result

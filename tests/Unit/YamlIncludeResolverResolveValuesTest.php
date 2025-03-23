@@ -44,8 +44,8 @@ class YamlIncludeResolverResolveValuesTest extends AbstractYamlIncludeResolverTe
     {
         $values = [
             'key1' => 'Simple value',
-            'key2' => 'domain.one::simple_key',
-            'key3' => 'domain.two::include_key',
+            'key2' => '@domain.one::simple_key',
+            'key3' => '@domain.two::include_key',
             'key4' => 123,
         ];
 
@@ -64,8 +64,8 @@ class YamlIncludeResolverResolveValuesTest extends AbstractYamlIncludeResolverTe
     public function testResolveNestedReferences()
     {
         $values = [
-            'key1' => 'domain.one::include_key_short_notation',
-            'key2' => 'domain.one::include_different_key',
+            'key1' => '@domain.one::include_key_short_notation',
+            'key2' => '@domain.one::include_different_key',
         ];
 
         $resolved = $this->resolver->resolveValues($values);
@@ -81,8 +81,8 @@ class YamlIncludeResolverResolveValuesTest extends AbstractYamlIncludeResolverTe
     public function testResolveMissingReferences()
     {
         $values = [
-            'key1' => 'domain.one::missing',
-            'key2' => 'domain.missing::key',
+            'key1' => '@domain.one::missing',
+            'key2' => '@domain.missing::key',
         ];
 
         $resolved = $this->resolver->resolveValues($values);
@@ -98,7 +98,7 @@ class YamlIncludeResolverResolveValuesTest extends AbstractYamlIncludeResolverTe
     public function testResolveArrayValues()
     {
         $values = [
-            'key1' => 'domain.one::simple_group.include_group_short_notation',
+            'key1' => '@domain.one::simple_group.include_group_short_notation',
         ];
 
         $resolved = $this->resolver->resolveValues($values);
