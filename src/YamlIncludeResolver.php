@@ -147,11 +147,8 @@ class YamlIncludeResolver
             throw new Exception("Invalid YAML content in file: $filePath");
         }
 
-        // Ensure domain has the prefix
-        if (!str_starts_with($domain, self::DOMAIN_PREFIX)) {
-            $domain = self::DOMAIN_PREFIX . $domain;
-        }
-
+        // Store domain without prefix
+        // The @ prefix is only used in YAML references
         $this->domains[$domain] = $content;
 
         // Clear caches when registering a new file
@@ -275,7 +272,13 @@ class YamlIncludeResolver
         // we'll capture the remaining path segments to append to the result
         $keys = explode(self::KEYS_SEPARATOR, $key);
 
-        if (!$data = $this->domains[$domain] ?? null) {
+        // Remove prefix from domain when accessing domains array
+        $domainKey = $domain;
+        if (str_starts_with($domainKey, self::DOMAIN_PREFIX)) {
+            $domainKey = substr($domainKey, strlen(self::DOMAIN_PREFIX));
+        }
+
+        if (!$data = $this->domains[$domainKey] ?? null) {
             // Cache the result
             $this->valueCache[$cacheKey] = $default;
             return $default;

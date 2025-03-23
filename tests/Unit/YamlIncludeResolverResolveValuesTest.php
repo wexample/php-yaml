@@ -15,8 +15,8 @@ class YamlIncludeResolverResolveValuesTest extends AbstractYamlIncludeResolverTe
         parent::setUp();
 
         // Register test YAML files
-        $this->resolver->registerFile('@domain.one', $this->resourcesPath . '/domain/one.yml');
-        $this->resolver->registerFile('@domain.two', $this->resourcesPath . '/domain/two.yml');
+        $this->resolver->registerFile('domain.one', $this->resourcesPath . '/domain/one.yml');
+        $this->resolver->registerFile('domain.two', $this->resourcesPath . '/domain/two.yml');
     }
 
     /**
@@ -44,8 +44,8 @@ class YamlIncludeResolverResolveValuesTest extends AbstractYamlIncludeResolverTe
     {
         $values = [
             'key1' => 'Simple value',
-            'key2' => '@domain.one::simple_key',
-            'key3' => '@domain.two::include_key',
+            'key2' => 'domain.one::simple_key',
+            'key3' => 'domain.two::include_key',
             'key4' => 123,
         ];
 
@@ -64,8 +64,8 @@ class YamlIncludeResolverResolveValuesTest extends AbstractYamlIncludeResolverTe
     public function testResolveNestedReferences()
     {
         $values = [
-            'key1' => '@domain.one::include_key_short_notation',
-            'key2' => '@domain.one::include_different_key',
+            'key1' => 'domain.one::include_key_short_notation',
+            'key2' => 'domain.one::include_different_key',
         ];
 
         $resolved = $this->resolver->resolveValues($values);
@@ -81,15 +81,15 @@ class YamlIncludeResolverResolveValuesTest extends AbstractYamlIncludeResolverTe
     public function testResolveMissingReferences()
     {
         $values = [
-            'key1' => '@domain.one::missing',
-            'key2' => '@domain.missing::key',
+            'key1' => 'domain.one::missing',
+            'key2' => 'domain.missing::key',
         ];
 
         $resolved = $this->resolver->resolveValues($values);
 
         // Missing references should return the original reference
-        $this->assertEquals('@domain.one::missing', $resolved['key1']);
-        $this->assertEquals('@domain.missing::key', $resolved['key2']);
+        $this->assertEquals('domain.one::missing', $resolved['key1']);
+        $this->assertEquals('domain.missing::key', $resolved['key2']);
     }
 
     /**
@@ -98,7 +98,7 @@ class YamlIncludeResolverResolveValuesTest extends AbstractYamlIncludeResolverTe
     public function testResolveArrayValues()
     {
         $values = [
-            'key1' => '@domain.one::simple_group.include_group_short_notation',
+            'key1' => 'domain.one::simple_group.include_group_short_notation',
         ];
 
         $resolved = $this->resolver->resolveValues($values);
@@ -121,7 +121,7 @@ class YamlIncludeResolverResolveValuesTest extends AbstractYamlIncludeResolverTe
             'include_key' => '%', // This should resolve to the value of simple_key in domain.two
         ];
 
-        $resolved = $this->resolver->resolveValues($values, '@domain.two');
+        $resolved = $this->resolver->resolveValues($values, 'domain.two');
 
         // Check that the wildcard reference is resolved using the specified domain
         $this->assertEquals('This should not be resolved', $resolved['simple_key']);

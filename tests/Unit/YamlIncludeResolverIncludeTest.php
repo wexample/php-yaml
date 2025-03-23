@@ -16,21 +16,21 @@ class YamlIncludeResolverIncludeTest extends AbstractYamlIncludeResolverTest
         parent::setUp();
 
         // Register test YAML files
-        $this->resolver->registerFile('@domain.one', $this->resourcesPath . '/domain/one.yml');
-        $this->resolver->registerFile('@domain.two', $this->resourcesPath . '/domain/two.yml');
+        $this->resolver->registerFile('domain.one', $this->resourcesPath . '/domain/one.yml');
+        $this->resolver->registerFile('domain.two', $this->resourcesPath . '/domain/two.yml');
     }
 
     public function testSimpleValues()
     {
-        $this->assertEquals('Simple value', $this->resolver->getValue('@domain.one::simple_key'));
-        $this->assertEquals('Simple group value', $this->resolver->getValue('@domain.one::simple_group.simple_group_key'));
+        $this->assertEquals('Simple value', $this->resolver->getValue('domain.one::simple_key'));
+        $this->assertEquals('Simple group value', $this->resolver->getValue('domain.one::simple_group.simple_group_key'));
     }
 
     public function testIncludeWithSameKey()
     {
         $this->assertEquals(
             'Included string with short notation',
-            $this->resolver->getValue('@domain.one::include_key_short_notation')
+            $this->resolver->getValue('domain.one::include_key_short_notation')
         );
     }
 
@@ -38,7 +38,7 @@ class YamlIncludeResolverIncludeTest extends AbstractYamlIncludeResolverTest
     {
         $this->assertEquals(
             'Included value with different key',
-            $this->resolver->getValue('@domain.one::include_different_key')
+            $this->resolver->getValue('domain.one::include_different_key')
         );
     }
 
@@ -46,37 +46,37 @@ class YamlIncludeResolverIncludeTest extends AbstractYamlIncludeResolverTest
     {
         $this->assertEquals(
             'First level item',
-            $this->resolver->getValue('@domain.one::include_key_sub_item')
+            $this->resolver->getValue('domain.one::include_key_sub_item')
         );
     }
 
     public function testDeepValues()
     {
-        $this->assertEquals('Deep two', $this->resolver->getValue('@domain.one::deep_values.deepTwo'));
-        $this->assertEquals('Deep two', $this->resolver->getValue('@domain.one::deep_values_2.deeper.deepTwo'));
+        $this->assertEquals('Deep two', $this->resolver->getValue('domain.one::deep_values.deepTwo'));
+        $this->assertEquals('Deep two', $this->resolver->getValue('domain.one::deep_values_2.deeper.deepTwo'));
     }
 
     public function testGroupIncludes()
     {
         $this->assertIsArray(
-            $this->resolver->getValue('@domain.one::simple_group.include_group_short_notation')
+            $this->resolver->getValue('domain.one::simple_group.include_group_short_notation')
         );
 
         $this->assertEquals(
             'One',
-            $this->resolver->getValue('@domain.one::simple_group.include_group_short_notation.sub_group.one')
+            $this->resolver->getValue('domain.one::simple_group.include_group_short_notation.sub_group.one')
         );
     }
 
     public function testResolvableLoop()
     {
         $this->assertIsArray(
-            $this->resolver->getValue('@domain.one::include_resolvable_loop')
+            $this->resolver->getValue('domain.one::include_resolvable_loop')
         );
 
         $this->assertEquals(
             'Two',
-            $this->resolver->getValue('@domain.one::include_resolvable_loop.sub_group.two')
+            $this->resolver->getValue('domain.one::include_resolvable_loop.sub_group.two')
         );
     }
 
@@ -89,14 +89,14 @@ class YamlIncludeResolverIncludeTest extends AbstractYamlIncludeResolverTest
 
         // Missing includes should return the original reference
         $this->assertEquals(
-            '@domain.one::missing',
-            $this->resolver->getValue('@domain.one::missing')
+            'domain.one::missing',
+            $this->resolver->getValue('domain.one::missing')
         );
 
         // Missing includes should return the original reference
         $this->assertEquals(
-            '@domain.two::missing',
-            $this->resolver->getValue('@domain.one::include_missing')
+            'domain.two::missing',
+            $this->resolver->getValue('domain.one::include_missing')
         );
     }
 }
