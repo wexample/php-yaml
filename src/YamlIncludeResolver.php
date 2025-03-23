@@ -3,7 +3,12 @@
 namespace Wexample\PhpYaml;
 
 use Exception;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use Symfony\Component\Finder\SplFileInfo;
 use Symfony\Component\Yaml\Yaml;
+use Wexample\Helpers\Helper\FileHelper;
+use Wexample\Helpers\Helper\VariableSpecialHelper;
 
 class YamlIncludeResolver
 {
@@ -36,6 +41,54 @@ class YamlIncludeResolver
      * Loaded YAML files by domain
      */
     private array $domains = [];
+
+    /**
+     * Scans a directory for YAML files and registers them
+     *
+     * @param string $pathTranslations Directory path to scan for YAML files
+     * @param string|null $aliasPrefix Optional prefix for the domain names
+     * @throws Exception If a file can't be registered
+     */
+    public function scanDirectory(
+        string $pathTranslations,
+        ?string $aliasPrefix = null
+    ): void
+    {
+        if (!file_exists($pathTranslations)) {
+            throw new Exception("Directory not found: $pathTranslations");
+        }
+
+        $it = new RecursiveDirectoryIterator($pathTranslations);
+
+        /** @var SplFileInfo $file */
+        foreach (new RecursiveIteratorIterator($it) as $file) {
+            $info = (object) pathinfo($file);
+
+            if (FileHelper::FILE_EXTENSION_YML === $info->extension) {
+                $exp = explode('.', $info->filename);
+
+                // Build the relative path from the file to the translations directory
+                $subDir = FileHelper::buildRelativePath(
+                    $info->dirname,
+                    dirname($pathTranslations)
+                );
+
+                $domain = [];
+                // There is a subdirectory (allow translation files at dir root)
+                if (VariableSpecialHelper::_EMPTY_STRING !== $subDir) {
+                    $domain = explode('/', $subDir);
+                }
+
+                // Append file name
+                $domain[] = $exp[0];
+                $domain = implode(self::KEYS_SEPARATOR, $domain);
+                $domain = $aliasPrefix ? $aliasPrefix . '.' . $domain : self::DOMAIN_PREFIX . $domain;
+
+                // Register the file
+                $this->registerFile($domain, $file);
+            }
+        }
+    }
 
     /**
      * Register a YAML file with a specific domain name
