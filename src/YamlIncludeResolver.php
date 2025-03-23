@@ -5,7 +5,6 @@ namespace Wexample\PhpYaml;
 use Exception;
 use Symfony\Component\Yaml\Yaml;
 use Wexample\Helpers\Helper\FileHelper;
-use Wexample\Helpers\Helper\VariableSpecialHelper;
 
 class YamlIncludeResolver
 {
@@ -35,7 +34,7 @@ class YamlIncludeResolver
     final public const string KEYS_SEPARATOR = '.';
 
     /**
-     * Loaded YAML files by domain
+     * Array of registered domains with their content
      */
     private array $domains = [];
 
@@ -47,8 +46,7 @@ class YamlIncludeResolver
      * @throws Exception If a file can't be registered
      */
     public function scanDirectory(
-        string $pathTranslations,
-        ?string $aliasPrefix = null
+        string $pathTranslations
     ): void
     {
         // Use the FileHelper to scan the directory for YAML files
@@ -59,8 +57,7 @@ class YamlIncludeResolver
                 \SplFileInfo $file
             ) use
             (
-                $pathTranslations,
-                $aliasPrefix
+                $pathTranslations
             ) {
                 $exp = explode('.', $file->getFilename());
 
@@ -80,7 +77,6 @@ class YamlIncludeResolver
                 // Append file name to the domain parts
                 $domain[] = $exp[0];
                 $domain = implode(self::KEYS_SEPARATOR, $domain);
-                $domain = $aliasPrefix ? $aliasPrefix . '.' . $domain : self::DOMAIN_PREFIX . $domain;
 
                 // Register the file
                 $this->registerFile($domain, $file->getPathname());
