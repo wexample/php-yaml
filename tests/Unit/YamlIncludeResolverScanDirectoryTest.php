@@ -35,7 +35,7 @@ class YamlIncludeResolverScanDirectoryTest extends TestCase
 
         $this->assertEquals(
             'Simple value',
-            $this->resolver->getValue('domain.three::simple_key')
+            $this->resolver->getValueResolved('@domain.three::simple_key')
         );
     }
 

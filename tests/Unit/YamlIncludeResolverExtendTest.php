@@ -21,7 +21,7 @@ class YamlIncludeResolverExtendTest extends AbstractYamlIncludeResolverTest
 
     public function testExtends()
     {
-        $this->assertEquals('Simple value', $this->resolver->getValue('domain.three::simple_key'));
-        $this->assertEquals('Simple group value', $this->resolver->getValue('domain.three::simple_group.simple_group_key'));
+        $this->assertEquals('Simple value', $this->resolver->getValueResolved('@domain.three::simple_key'));
+        $this->assertEquals('Simple group value', $this->resolver->getValueResolved('@domain.three::simple_group.simple_group_key'));
     }
 }

@@ -3,6 +3,7 @@
 namespace Wexample\PhpYaml;
 
 use Exception;
+use SplFileInfo;
 use Symfony\Component\Yaml\Yaml;
 use Wexample\Helpers\Helper\FileHelper;
 
@@ -82,11 +83,11 @@ class YamlIncludeResolver
             $relativeBasePath,
             FileHelper::FILE_EXTENSION_YML,
             function (
-                \SplFileInfo $fileInfo
+                SplFileInfo $fileInfo
             ) use
             (
                 $relativeBasePath
-            ): \SplFileInfo {
+            ): SplFileInfo {
 
                 // Register the file
                 $this->registerFile($this->buildDomainFromFile(
@@ -100,7 +101,7 @@ class YamlIncludeResolver
     }
 
     public function buildDomainFromFile(
-        \SplFileInfo $fileInfo,
+        SplFileInfo $fileInfo,
         string $relativeBasePath
     ): string
     {
@@ -219,7 +220,7 @@ class YamlIncludeResolver
             if (is_string($value)) {
                 if ($this->isIncludeReference($value)) {
                     // Resolve the reference
-                    $resolved[$key] =$this->getValueResolved($value);
+                    $resolved[$key] = $this->getValueResolved($value);
                 } else if ($value === self::DOMAIN_SAME_KEY_WILDCARD && $domain) {
                     // Handle wildcard references with a specific domain
                     $resolved[$key] = $this->getValue(key: $key, domain: $domain);
@@ -234,21 +235,40 @@ class YamlIncludeResolver
         return $resolved;
     }
 
+    public function splitDomainAndTrimPrefix(
+        string $key,
+    ): ?string
+    {
+        if ($domain = $this->splitDomain($key)) {
+            return $this->trimDomainPrefix($domain);
+        }
+        return null;
+    }
+
+    public function trimDomainPrefix(
+        string $domain,
+    ): string
+    {
+        return substr($domain, strlen(self::DOMAIN_PREFIX));
+    }
+
     public function getValueResolved(
         string $key,
     ): mixed
     {
-        return $this->getValue(
+        $domain = $this->splitDomainAndTrimPrefix($key);
+
+        return $domain ? $this->getValue(
             key: $this->splitKey($key),
-            domain: $this->splitDomain($key)
-        );
+            domain: $domain
+        ) : $key;
     }
 
     /**
      * Get a value from a domain using a dot-notation key
      *
      * @param string $key Dot-notation key
-     * @param string|null $domain Domain name
+     * @param string $domain Domain name
      * @return mixed Value or null if not found
      */
     public function getValue(
@@ -271,7 +291,6 @@ class YamlIncludeResolver
         // If we encounter a non-array element before reaching the end of the path,
         // we'll capture the remaining path segments to append to the result
         $keys = explode(self::KEYS_SEPARATOR, $key);
-
 
         if (!$data = $this->domains[$domain] ?? null) {
             // Cache the result
@@ -306,8 +325,7 @@ class YamlIncludeResolver
         $value = $searchData;
 
         if (is_string($value) && $value !== $default && $this->isIncludeReference($value)) {
-            $refDomain = $this->splitDomain($value);
-            $refDomain = substr($refDomain, 1);
+            $refDomain = $this->splitDomainAndTrimPrefix($value);
 
             $refKey = $this->splitKey($value);
 
@@ -333,8 +351,7 @@ class YamlIncludeResolver
         if (!$found && is_array($data) && array_key_exists(self::FILE_EXTENDS, $data) && is_string($data[self::FILE_EXTENDS])) {
             // The domain has an extends directive, try to get the value from the parent domain
             // This allows for inheritance of values between domains
-            $parentDomain = $data[self::FILE_EXTENDS];
-            $parentDomain = substr($parentDomain, 1);
+            $parentDomain = $this->trimDomainPrefix($data[self::FILE_EXTENDS]);
 
             $result = $this->getValue(
                 key: $key,
