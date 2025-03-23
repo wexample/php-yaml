@@ -39,6 +39,21 @@ class YamlIncludeResolver
     private array $domains = [];
 
     /**
+     * Cache for resolved values
+     */
+    private array $valueCache = [];
+
+    /**
+     * Cache for domain splits
+     */
+    private array $domainSplitCache = [];
+
+    /**
+     * Cache for key splits
+     */
+    private array $keySplitCache = [];
+
+    /**
      * Scans a directory for YAML files and registers them
      *
      * @param string $relativeBasePath Directory path to scan for YAML files
@@ -49,6 +64,9 @@ class YamlIncludeResolver
         string $relativeBasePath
     ): array
     {
+        // Clear caches when scanning a new directory
+        $this->clearCaches();
+
         // Use the FileHelper to scan the directory for YAML files
         return FileHelper::scanDirectoryForFiles(
             $relativeBasePath,
@@ -125,6 +143,19 @@ class YamlIncludeResolver
         }
 
         $this->domains[$domain] = $content;
+        
+        // Clear caches when registering a new file
+        $this->clearCaches();
+    }
+
+    /**
+     * Clear all caches
+     */
+    private function clearCaches(): void
+    {
+        $this->valueCache = [];
+        $this->domainSplitCache = [];
+        $this->keySplitCache = [];
     }
 
     /**
@@ -175,6 +206,14 @@ class YamlIncludeResolver
         string $domain = null
     ): mixed
     {
+        // Generate a cache key
+        $cacheKey = ($domain ?? '') . '|' . $key;
+        
+        // Check if the value is already in cache
+        if (array_key_exists($cacheKey, $this->valueCache)) {
+            return $this->valueCache[$cacheKey];
+        }
+        
         $default = $key;
         $found = false;
 
@@ -193,6 +232,8 @@ class YamlIncludeResolver
         $keys = explode(self::KEYS_SEPARATOR, $key);
 
         if (!$data = $this->domains[$domain] ?? null) {
+            // Cache the result
+            $this->valueCache[$cacheKey] = $default;
             return $default;
         }
 
@@ -234,7 +275,12 @@ class YamlIncludeResolver
             }
 
             // Pass the remaining segments to the recursive call
-            return $this->getValue($refKey, $refDomain);
+            $result = $this->getValue($refKey, $refDomain);
+            
+            // Cache the result
+            $this->valueCache[$cacheKey] = $result;
+            
+            return $result;
         }
 
         // If value was not found and the domain has an extends directive,
@@ -242,12 +288,20 @@ class YamlIncludeResolver
         if (!$found && is_array($data) && array_key_exists(self::FILE_EXTENDS, $data) && is_string($data[self::FILE_EXTENDS])) {
             // The domain has an extends directive, try to get the value from the parent domain
             // This allows for inheritance of values between domains
-            return $this->getValue(
+            $result = $this->getValue(
                 key: $key,
                 domain: $data[self::FILE_EXTENDS]
             );
+            
+            // Cache the result
+            $this->valueCache[$cacheKey] = $result;
+            
+            return $result;
         }
 
+        // Cache the result
+        $this->valueCache[$cacheKey] = $value;
+        
         return $value;
     }
 
@@ -259,11 +313,24 @@ class YamlIncludeResolver
      */
     public function splitDomain(?string $key): ?string
     {
-        if (str_contains($key, self::DOMAIN_SEPARATOR)) {
-            return current(explode(self::DOMAIN_SEPARATOR, $key));
+        if ($key === null) {
+            return null;
         }
-
-        return null;
+        
+        // Check cache first
+        if (array_key_exists($key, $this->domainSplitCache)) {
+            return $this->domainSplitCache[$key];
+        }
+        
+        $result = null;
+        if (str_contains($key, self::DOMAIN_SEPARATOR)) {
+            $result = current(explode(self::DOMAIN_SEPARATOR, $key));
+        }
+        
+        // Cache the result
+        $this->domainSplitCache[$key] = $result;
+        
+        return $result;
     }
 
     /**
@@ -274,12 +341,20 @@ class YamlIncludeResolver
      */
     public function splitKey(string $key): ?string
     {
+        // Check cache first
+        if (array_key_exists($key, $this->keySplitCache)) {
+            return $this->keySplitCache[$key];
+        }
+        
+        $result = $key;
         if (str_contains($key, self::DOMAIN_SEPARATOR)) {
             $exp = explode(self::DOMAIN_SEPARATOR, $key);
-
-            return end($exp);
+            $result = end($exp);
         }
-
-        return $key;
+        
+        // Cache the result
+        $this->keySplitCache[$key] = $result;
+        
+        return $result;
     }
 }
