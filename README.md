@@ -1,51 +1,45 @@
 # PHP YAML Includes
 
-Une bibliothèque PHP légère pour résoudre les inclusions entre fichiers YAML.
+A lightweight PHP library for resolving includes between YAML files with support for inheritance and references.
 
 ## Installation
 
 ```bash
-composer require wexample/php-yaml-includes
+composer require wexample/php-yaml
 ```
 
-## Fonctionnalités
+## Features
 
-- Résolution des inclusions entre fichiers YAML
-- Support des références avec la syntaxe `@domain::key`
-- Support des références avec la même clé via `@domain::%`
-- Héritage de fichiers YAML complets avec `~extends: @domain`
-- Support des chemins imbriqués avec la notation par points (`key.subkey.value`)
+- Resolve includes between YAML files
+- Support for references with `@domain::key` syntax
+- Support for same-key references via `@domain::%`
+- Complete YAML file inheritance with `~extends: @domain`
+- Support for nested paths with dot notation (`key.subkey.value`)
 
-## Utilisation
+## Usage
 
-### Example de base
+### Basic Example
 
 ```php
 use Wexample\PhpYaml\YamlIncludeResolver;
 
-// Créer une instance du résolveur
+// Create a resolver instance
 $resolver = new YamlIncludeResolver();
 
-// Enregistrer des fichiers YAML individuels
-$resolver->registerFile('domain.one', '/path/to/one.yml');
-$resolver->registerFile('domain.two', '/path/to/two.yml');
+// Register individual YAML files with domain names
+$resolver->registerFile('@domain.one', '/path/to/one.yml');
+$resolver->registerFile('@domain.two', '/path/to/two.yml');
 
-// Ou enregistrer un répertoire entier (avec sous-répertoires)
-$resolver->registerDirectory('/path/to/yaml/files');
+// Get values using domain and key references
+$value = $resolver->getValue('@domain.one::some_key');
 
-// Résoudre toutes les inclusions
-$resolver->resolveIncludes();
-
-// Récupérer le contenu résolu pour un domaine spécifique
-$content = $resolver->getResolvedContent('domain.one');
-
-// Ou récupérer tout le contenu résolu
-$allContent = $resolver->getAllResolvedContent();
+// Get nested values using dot notation
+$nestedValue = $resolver->getValue('@domain.one::group.subgroup.key');
 ```
 
-### Format des fichiers YAML
+### YAML File Format
 
-#### Inclusions simples
+#### Simple References
 
 ```yaml
 # one.yml
@@ -54,10 +48,10 @@ include_key: '@domain.two::some_key'
 
 ```yaml
 # two.yml
-some_key: "Valeur incluse"
+some_key: "Included value"
 ```
 
-#### Inclusions avec la même clé
+#### Same-Key References
 
 ```yaml
 # one.yml
@@ -66,28 +60,38 @@ my_key: '@domain.two::%'
 
 ```yaml
 # two.yml
-my_key: "Valeur de la même clé dans un autre domaine"
+my_key: "Value of the same key in another domain"
 ```
 
-#### Héritage complet
+#### Complete Inheritance
 
 ```yaml
 # child.yml
 ~extends: '@parent'
-child_key: "Valeur enfant"
+child_key: "Child value"
 ```
 
 ```yaml
 # parent.yml
-parent_key: "Valeur parent"
+parent_key: "Parent value"
 ```
 
-Après résolution, `child.yml` contiendra :
+After resolution, `child.yml` will contain:
 ```yaml
-child_key: "Valeur enfant"
-parent_key: "Valeur parent"
+child_key: "Child value"
+parent_key: "Parent value"
 ```
 
-## Licence
+### Constants
+
+The YamlIncludeResolver class defines several constants that you can use:
+
+- `DOMAIN_PREFIX`: '@' - Prefix for domain references
+- `DOMAIN_SEPARATOR`: '::' - Separator between domain and key
+- `DOMAIN_SAME_KEY_WILDCARD`: '%' - Wildcard to reference the same key in another domain
+- `FILE_EXTENDS`: '~extends' - Key used for extending another YAML file
+- `KEYS_SEPARATOR`: '.' - Separator for nested keys
+
+## License
 
 MIT
