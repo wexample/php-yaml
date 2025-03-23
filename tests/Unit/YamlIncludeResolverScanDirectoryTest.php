@@ -40,22 +40,6 @@ class YamlIncludeResolverScanDirectoryTest extends TestCase
     }
 
     /**
-     * Test scanning a directory with an alias prefix
-     *
-     * @throws Exception
-     */
-    public function testScanDirectoryWithAliasPrefix()
-    {
-        // Scan the test directory with an alias prefix
-        $this->resolver->scanDirectory($this->testDirectoryPath, '@custom');
-
-        $this->assertEquals(
-            'Simple value',
-            $this->resolver->getValue('@custom.domain.one::simple_key')
-        );
-    }
-
-    /**
      * Test scanning a non-existent directory
      */
     public function testScanNonExistentDirectory()

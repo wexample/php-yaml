@@ -30,7 +30,7 @@ class YamlIncludeResolver
     final public const string FILE_EXTENDS = '~extends';
 
     /**
-     * Separator for nested keys
+     * Separator for nested keys in dot notation
      */
     final public const string KEYS_SEPARATOR = '.';
 
