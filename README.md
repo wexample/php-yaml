@@ -1,6 +1,8 @@
 # PHP YAML Includes
 
-A lightweight PHP library for resolving includes between YAML files with support for inheritance and references.
+A lightweight PHP library for resolving includes between YAML files with support for inheritance, references, and performance-optimized caching.
+
+Developed by [Wexample](https://wexample.com).
 
 ## Installation
 
@@ -15,6 +17,7 @@ composer require wexample/php-yaml
 - Support for same-key references via `@domain::%`
 - Complete YAML file inheritance with `~extends: @domain`
 - Support for nested paths with dot notation (`key.subkey.value`)
+- High-performance multi-level caching system for optimized lookups
 
 ## Usage
 
@@ -81,6 +84,27 @@ After resolution, `child.yml` will contain:
 child_key: "Child value"
 parent_key: "Parent value"
 ```
+
+### Performance Optimization
+
+The library includes a sophisticated caching system that significantly improves performance, especially in high-volume scenarios like translation services:
+
+```php
+// The resolver automatically caches results
+// Subsequent calls with the same parameters will be much faster
+$value1 = $resolver->getValue('@domain.one::some_key'); // Initial lookup (slower)
+$value2 = $resolver->getValue('@domain.one::some_key'); // Cached lookup (much faster)
+
+// Cache is automatically invalidated when new files are registered
+$resolver->registerFile('@domain.three', '/path/to/three.yml');
+// All caches are cleared to ensure consistency
+```
+
+The caching system operates on three levels:
+
+1. **Value Cache**: Stores complete resolved values to avoid recursive lookups
+2. **Domain Split Cache**: Optimizes domain extraction operations
+3. **Key Split Cache**: Optimizes key extraction operations
 
 ### Constants
 

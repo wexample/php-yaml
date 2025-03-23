@@ -164,7 +164,7 @@ class YamlIncludeResolver
      * @param string $string String to check
      * @return bool True if the string is an include reference
      */
-    private function isIncludeReference(string $string): bool
+    public function isIncludeReference(string $string): bool
     {
         return str_starts_with($string, self::DOMAIN_PREFIX) &&
             str_contains($string, self::DOMAIN_SEPARATOR);
