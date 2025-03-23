@@ -38,11 +38,6 @@ class YamlIncludeResolver
     private array $domains = [];
 
     /**
-     * Stack of domains being processed to prevent infinite recursion
-     */
-    protected array $domainsStack = [];
-
-    /**
      * Register a YAML file with a specific domain name
      *
      * @param string $domain Domain name for the YAML file
@@ -126,7 +121,6 @@ class YamlIncludeResolver
         // Extract domain from the key if not provided explicitly
         if (is_null($domain) && $domain = $this->splitDomain($key)) {
             $key = $this->splitId($key);
-            $domain = $this->resolveDomain($domain);
         }
 
         if ($domain) {
@@ -227,22 +221,5 @@ class YamlIncludeResolver
         }
 
         return $id;
-    }
-
-    /**
-     * Resolve a domain name, checking if it's in the domains stack
-     *
-     * @param string $domain Domain to resolve
-     * @return string|null Resolved domain
-     */
-    public function resolveDomain(string $domain): ?string
-    {
-        if (str_starts_with($domain, self::DOMAIN_PREFIX)) {
-            if (isset($this->domainsStack[$domain])) {
-                return $domain;
-            }
-        }
-
-        return $domain;
     }
 }
