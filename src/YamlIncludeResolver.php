@@ -120,7 +120,7 @@ class YamlIncludeResolver
 
         // Extract domain from the key if not provided explicitly
         if (is_null($domain) && $domain = $this->splitDomain($key)) {
-            $key = $this->splitId($key);
+            $key = $this->splitKey($key);
         }
 
         if ($domain) {
@@ -164,7 +164,7 @@ class YamlIncludeResolver
 
         if (is_string($value) && $value !== $default && $this->isIncludeReference($value)) {
             $refDomain = $this->splitDomain($value);
-            $refKey = $this->splitId($value);
+            $refKey = $this->splitKey($value);
             if ($refKey === self::DOMAIN_SAME_KEY_WILDCARD) {
                 $refKey = $key;
             }
@@ -192,34 +192,34 @@ class YamlIncludeResolver
     }
 
     /**
-     * Extract domain part from an identifier
+     * Extract domain part from a reference
      *
-     * @param string|null $id Identifier to extract domain from
+     * @param string|null $key Reference to extract domain from
      * @return string|null Domain part or null if not found
      */
-    public function splitDomain(?string $id): ?string
+    public function splitDomain(?string $key): ?string
     {
-        if (str_contains($id, self::DOMAIN_SEPARATOR)) {
-            return current(explode(self::DOMAIN_SEPARATOR, $id));
+        if (str_contains($key, self::DOMAIN_SEPARATOR)) {
+            return current(explode(self::DOMAIN_SEPARATOR, $key));
         }
 
         return null;
     }
 
     /**
-     * Extract ID part from a domain identifier
+     * Extract key part from a domain reference
      *
-     * @param string $id Identifier to extract ID from
-     * @return string ID part
+     * @param string $key Reference to extract key from
+     * @return string Key part
      */
-    public function splitId(string $id): ?string
+    public function splitKey(string $key): ?string
     {
-        if (str_contains($id, self::DOMAIN_SEPARATOR)) {
-            $exp = explode(self::DOMAIN_SEPARATOR, $id);
+        if (str_contains($key, self::DOMAIN_SEPARATOR)) {
+            $exp = explode(self::DOMAIN_SEPARATOR, $key);
 
             return end($exp);
         }
 
-        return $id;
+        return $key;
     }
 }
