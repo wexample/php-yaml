@@ -1,16 +1,16 @@
 {
-    "name": "wexample/php-yaml-includes",
+    "name": "wexample/php-yaml",
     "description": "A lightweight PHP library for resolving includes between YAML files",
     "type": "library",
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Wexample\\PhpYamlIncludes\\": "src/"
+            "Wexample\\PhpYaml\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Wexample\\PhpYamlIncludes\\Tests\\": "tests/"
+            "Wexample\\PhpYaml\\Tests\\": "tests/"
         }
     },
     "require": {

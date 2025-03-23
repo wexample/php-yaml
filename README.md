@@ -21,7 +21,7 @@ composer require wexample/php-yaml-includes
 ### Example de base
 
 ```php
-use Wexample\PhpYamlIncludes\YamlIncludeResolver;
+use Wexample\PhpYaml\YamlIncludeResolver;
 
 // Créer une instance du résolveur
 $resolver = new YamlIncludeResolver();
