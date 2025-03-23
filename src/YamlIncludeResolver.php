@@ -218,15 +218,7 @@ class YamlIncludeResolver
 
         foreach ($values as $key => $value) {
             if (is_string($value)) {
-                if ($this->isIncludeReference($value)) {
-                    // Resolve the reference
-                    $resolved[$key] = $this->getValueResolved($value);
-                } else if ($value === self::DOMAIN_SAME_KEY_WILDCARD && $domain) {
-                    // Handle wildcard references with a specific domain
-                    $resolved[$key] = $this->getValue(key: $key, domain: $domain);
-                } else {
-                    $resolved[$key] = $value;
-                }
+                $resolved[$key] = $this->resolveValue($value, $domain, $key);
             } else {
                 $resolved[$key] = $value;
             }
@@ -235,6 +227,35 @@ class YamlIncludeResolver
         return $resolved;
     }
 
+    /**
+     * Resolve a single value based on its type
+     *
+     * @param string $value The value to resolve
+     * @param string|null $domain Default domain for wildcard resolution
+     * @param string $key Current key for wildcard resolution
+     * @return mixed Resolved value
+     */
+    private function resolveValue(
+        string $value,
+        ?string $domain,
+        string $key = ''
+    ): mixed
+    {
+        if ($this->isIncludeReference($value)) {
+            return $this->getValueResolved($value);
+        } elseif ($value === self::DOMAIN_SAME_KEY_WILDCARD && $domain) {
+            return $this->getValue(key: $key, domain: $domain);
+        } else {
+            return $value;
+        }
+    }
+
+    /**
+     * Extract domain from a key and remove the prefix
+     *
+     * @param string $key Key containing a domain reference
+     * @return string|null Domain without prefix or null if no domain found
+     */
     public function splitDomainAndTrimPrefix(
         string $key,
     ): ?string
@@ -245,6 +266,12 @@ class YamlIncludeResolver
         return null;
     }
 
+    /**
+     * Remove the domain prefix from a domain string
+     *
+     * @param string $domain Domain possibly containing a prefix
+     * @return string Domain without the prefix
+     */
     public function trimDomainPrefix(
         string $domain,
     ): string
@@ -252,16 +279,25 @@ class YamlIncludeResolver
         return substr($domain, strlen(self::DOMAIN_PREFIX));
     }
 
+    /**
+     * Resolve a reference and return its value
+     * This function expects a reference with the @ prefix
+     *
+     * @param string $key Include reference (must start with @)
+     * @return mixed Resolved value or the original key if not a valid reference
+     */
     public function getValueResolved(
         string $key,
     ): mixed
     {
-        $domain = $this->splitDomainAndTrimPrefix($key);
+        if (!$this->isIncludeReference($key) || !$domain = $this->splitDomainAndTrimPrefix($key)) {
+            return $key;
+        }
 
-        return $domain ? $this->getValue(
+        return $this->getValue(
             key: $this->splitKey($key),
             domain: $domain
-        ) : $key;
+        );
     }
 
     /**
@@ -402,7 +438,7 @@ class YamlIncludeResolver
      * Extract key part from a domain reference
      *
      * @param string $key Reference to extract key from
-     * @return string Key part
+     * @return string|null Key part
      */
     public function splitKey(string $key): ?string
     {
