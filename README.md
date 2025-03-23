@@ -35,10 +35,11 @@ $resolver->registerFile('@domain.one', '/path/to/one.yml');
 $resolver->registerFile('@domain.two', '/path/to/two.yml');
 
 // Get values using domain and key references
-$value = $resolver->getValue('@domain.one::some_key');
+$value = $resolver->getValueResolved('@domain.one::some_key');
+$value = $resolver->getValue('some_key', 'domain.one');
 
 // Get nested values using dot notation
-$nestedValue = $resolver->getValue('@domain.one::group.subgroup.key');
+$nestedValue = $resolver->getValueResolved('@domain.one::group.subgroup.key');
 ```
 
 ### Batch Processing
@@ -111,8 +112,8 @@ The library includes a sophisticated caching system that significantly improves 
 ```php
 // The resolver automatically caches results
 // Subsequent calls with the same parameters will be much faster
-$value1 = $resolver->getValue('@domain.one::some_key'); // Initial lookup (slower)
-$value2 = $resolver->getValue('@domain.one::some_key'); // Cached lookup (much faster)
+$value1 = $resolver->getValueResolved('@domain.one::some_key'); // Initial lookup (slower)
+$value2 = $resolver->getValueResolved('@domain.one::some_key'); // Cached lookup (much faster)
 
 // Batch processing also benefits from caching
 $resolved = $resolver->resolveValues($translations); // Uses cache for individual lookups
