@@ -118,6 +118,7 @@ class YamlIncludeResolver
     ): mixed
     {
         $default = $key;
+        $found = false;
 
         // Extract domain from the key if not provided explicitly
         if (is_null($domain) && $domain = $this->splitDomain($key)) {
@@ -139,12 +140,15 @@ class YamlIncludeResolver
         }
 
         $remainingSegments = [];
+        $searchData = $data;
         foreach ($keys as $i => $k) {
-            if (is_array($data)) {
-                if (array_key_exists($k, $data)) {
-                    $data = $data[$k];
+            if (is_array($searchData)) {
+                if (array_key_exists($k, $searchData)) {
+                    $searchData = $searchData[$k];
+                    $found = true;
                 } else {
-                    $data = $default;
+                    $found = false;
+                    $searchData = $default;
                 }
             } else {
                 // We've reached a point where we can't go further
@@ -152,13 +156,14 @@ class YamlIncludeResolver
                 $remainingSegments = array_slice($keys, $i);
 
                 if (empty($remainingSegments)) {
-                    $data = $default;
+                    $searchData = $default;
+                    $found = false;
                 }
                 break;
             }
         }
 
-        $value = $data;
+        $value = $searchData;
 
         if (is_string($value) && $value !== $default && $this->isIncludeReference($value)) {
             $refDomain = $this->splitDomain($value);
@@ -173,6 +178,12 @@ class YamlIncludeResolver
 
             // Pass the remaining segments to the recursive call
             return $this->getValue($refKey, $refDomain);
+        }
+
+        // Check if the domain has an extends directive and process it
+        if (!$found && is_array($data) && array_key_exists(self::FILE_EXTENDS, $data) && is_string($data[self::FILE_EXTENDS])) {
+            // Otherwise, try to get it from the parent domain
+            return $this->getValue(key: $key, domain: $data[self::FILE_EXTENDS]);
         }
 
         return $value;
