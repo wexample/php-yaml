@@ -151,8 +151,6 @@ class YamlIncludeResolver
     private function clearCaches(): void
     {
         $this->valueCache = [];
-        $this->domainSplitCache = [];
-        $this->keySplitCache = [];
     }
 
     /**
