@@ -45,16 +45,6 @@ class YamlIncludeResolver
     private array $valueCache = [];
 
     /**
-     * Cache for domain splits
-     */
-    private array $domainSplitCache = [];
-
-    /**
-     * Cache for key splits
-     */
-    private array $keySplitCache = [];
-
-    /**
      * Get all registered domains and their content
      *
      * @return array The complete registry of domains
@@ -255,12 +245,12 @@ class YamlIncludeResolver
      * @param string $key Key containing a domain reference
      * @return string|null Domain without prefix or null if no domain found
      */
-    public function splitDomainAndTrimPrefix(
+    public static function splitDomainAndTrimPrefix(
         string $key,
     ): ?string
     {
-        if ($domain = $this->splitDomain($key)) {
-            return $this->trimDomainPrefix($domain);
+        if ($domain = static::splitDomain($key)) {
+            return static::trimDomainPrefix($domain);
         }
         return null;
     }
@@ -271,7 +261,7 @@ class YamlIncludeResolver
      * @param string $domain Domain possibly containing a prefix
      * @return string Domain without the prefix
      */
-    public function trimDomainPrefix(
+    public static function trimDomainPrefix(
         string $domain,
     ): string
     {
@@ -294,7 +284,7 @@ class YamlIncludeResolver
         }
 
         return $this->getValue(
-            key: $this->splitKey($key),
+            key: $this::splitKey($key),
             domain: $domain
         );
     }
@@ -362,7 +352,7 @@ class YamlIncludeResolver
         if (is_string($value) && $value !== $default && $this->isIncludeReference($value)) {
             $refDomain = $this->splitDomainAndTrimPrefix($value);
 
-            $refKey = $this->splitKey($value);
+            $refKey = $this::splitKey($value);
 
             if ($refKey === self::DOMAIN_SAME_KEY_WILDCARD) {
                 $refKey = $key;
@@ -411,24 +401,16 @@ class YamlIncludeResolver
      * @param string|null $key Reference to extract domain from
      * @return string|null Domain part or null if not found
      */
-    public function splitDomain(?string $key): ?string
+    public static function splitDomain(?string $key): ?string
     {
         if ($key === null) {
             return null;
-        }
-
-        // Check cache first
-        if (array_key_exists($key, $this->domainSplitCache)) {
-            return $this->domainSplitCache[$key];
         }
 
         $result = null;
         if (str_contains($key, self::DOMAIN_SEPARATOR)) {
             $result = current(explode(self::DOMAIN_SEPARATOR, $key));
         }
-
-        // Cache the result
-        $this->domainSplitCache[$key] = $result;
 
         return $result;
     }
@@ -439,21 +421,13 @@ class YamlIncludeResolver
      * @param string $key Reference to extract key from
      * @return string|null Key part
      */
-    public function splitKey(string $key): ?string
+    public static function splitKey(string $key): ?string
     {
-        // Check cache first
-        if (array_key_exists($key, $this->keySplitCache)) {
-            return $this->keySplitCache[$key];
-        }
-
         $result = $key;
         if (str_contains($key, self::DOMAIN_SEPARATOR)) {
             $exp = explode(self::DOMAIN_SEPARATOR, $key);
             $result = end($exp);
         }
-
-        // Cache the result
-        $this->keySplitCache[$key] = $result;
 
         return $result;
     }
