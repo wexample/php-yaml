@@ -105,30 +105,6 @@ child_key: "Child value"
 parent_key: "Parent value"
 ```
 
-### Performance Optimization
-
-The library includes a sophisticated caching system that significantly improves performance, especially in high-volume scenarios like translation services:
-
-```php
-// The resolver automatically caches results
-// Subsequent calls with the same parameters will be much faster
-$value1 = $resolver->getValueResolved('@domain.one::some_key'); // Initial lookup (slower)
-$value2 = $resolver->getValueResolved('@domain.one::some_key'); // Cached lookup (much faster)
-
-// Batch processing also benefits from caching
-$resolved = $resolver->resolveValues($translations); // Uses cache for individual lookups
-
-// Cache is automatically invalidated when new files are registered
-$resolver->registerFile('@domain.three', '/path/to/three.yml');
-// All caches are cleared to ensure consistency
-```
-
-The caching system operates on three levels:
-
-1. **Value Cache**: Stores complete resolved values to avoid recursive lookups
-2. **Domain Split Cache**: Optimizes domain extraction operations
-3. **Key Split Cache**: Optimizes key extraction operations
-
 ### Constants
 
 The YamlIncludeResolver class defines several constants that you can use:
