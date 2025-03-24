@@ -68,7 +68,6 @@ class YamlIncludeResolver
      * Scans a directory for YAML files and registers them
      *
      * @param string $relativeBasePath Directory path to scan for YAML files
-     * @param string|null $aliasPrefix Optional prefix for the domain names
      * @throws Exception If a file can't be registered
      */
     public function scanDirectory(
