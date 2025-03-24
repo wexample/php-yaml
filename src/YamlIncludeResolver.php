@@ -59,7 +59,7 @@ class YamlIncludeResolver
      *
      * @return array The complete registry of domains
      */
-    public function getDomains(): array
+    public function getAllDomainsContent(): array
     {
         return $this->domains;
     }
