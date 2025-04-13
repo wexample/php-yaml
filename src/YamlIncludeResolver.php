@@ -198,13 +198,22 @@ class YamlIncludeResolver
      */
     public function resolveValues(
         array $values,
-        ?string $domain = null
+        ?string $domain = null,
+        array &$resolved = []
     ): array
     {
-        $resolved = [];
-
         foreach ($values as $key => $value) {
-            if (is_string($value)) {
+            // When we ask to resolve a file extending another one,
+            // we should resolve the whole hierarchy as first file may not
+            // contains all parents keys.
+            if ($key === self::FILE_EXTENDS) {
+                $dest = $this->trimDomainPrefix($value);
+                if (isset($this->domains[$dest])) {
+                    $this->resolveValues($this->domains[$dest], $dest, $resolved);
+                } else {
+                    $resolved[$key] = $value;
+                }
+            } elseif (is_string($value)) {
                 $resolved[$key] = $this->resolveValue($value, $domain, $key);
             } else {
                 $resolved[$key] = $value;
