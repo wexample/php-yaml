@@ -134,7 +134,12 @@ class YamlIncludeResolver
         $content = Yaml::parseFile($filePath);
 
         if (!is_array($content)) {
-            throw new Exception("Invalid YAML content in file: $filePath");
+            // This is not an empty file.
+            if (trim(file_get_contents($filePath))) {
+                throw new Exception("Invalid YAML content in file: $filePath");
+            } else {
+                $content = [];
+            }
         }
 
         // Store domain without prefix
