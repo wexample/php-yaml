@@ -1,137 +1,106 @@
-# PHP YAML Includes
+# php_yaml
 
-A lightweight PHP library for resolving includes between YAML files with support for inheritance, references, and performance-optimized caching.
+Version: 1.0.35
 
-Developed by [Wexample](https://wexample.com).
+A lightweight PHP library for resolving includes between YAML files
 
-## Installation
+## Code Quality & Typing
 
-```bash
-composer require wexample/php-yaml
-```
+All the suite packages follow strict quality standards:
 
-## Features
+- **Type hints**: Full type coverage with mypy validation
+- **Code formatting**: Enforced with black and isort
+- **Linting**: Comprehensive checks with custom scripts and tools
+- **Testing**: High test coverage requirements
 
-- Resolve includes between YAML files
-- Support for references with `@domain::key` syntax
-- Support for same-key references via `@domain::%`
-- Complete YAML file inheritance with `~extends: @domain`
-- Support for nested paths with dot notation (`key.subkey.value`)
-- High-performance multi-level caching system for optimized lookups
-- Batch processing of multiple values with automatic reference resolution
+These standards ensure reliability and maintainability across the suite.
 
-## Usage
+## Versioning & Compatibility Policy
 
-### Basic Example
+Wexample packages follow **Semantic Versioning** (SemVer):
 
-```php
-use Wexample\PhpYaml\YamlIncludeResolver;
+- **MAJOR**: Breaking changes
+- **MINOR**: New features, backward compatible
+- **PATCH**: Bug fixes, backward compatible
 
-// Create a resolver instance
-$resolver = new YamlIncludeResolver();
+We maintain backward compatibility within major versions and provide clear migration guides for breaking changes.
 
-// Register individual YAML files with domain names
-$resolver->registerFile('@domain.one', '/path/to/one.yml');
-$resolver->registerFile('@domain.two', '/path/to/two.yml');
+## Changelog
 
-// Get values using domain and key references
-$value = $resolver->getValueResolved('@domain.one::some_key');
-$value = $resolver->getValue('some_key', 'domain.one');
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history and release notes.
 
-// Get nested values using dot notation
-$nestedValue = $resolver->getValueResolved('@domain.one::group.subgroup.key');
-```
+Major changes are documented with migration guides when applicable.
 
-### Batch Processing
+## Migration Notes
 
-```php
-// Process multiple values at once, resolving all references
-$translations = [
-    'key1' => 'Simple value',
-    'key2' => '@domain.one::some_key',
-    'key3' => '@domain.two::other_key',
-    'key4' => '%' // Same key wildcard
-];
+When upgrading between major versions, refer to the migration guides in the documentation.
 
-// Resolve all references in the array
-$resolved = $resolver->resolveValues($translations);
+Breaking changes are clearly documented with upgrade paths and examples.
 
-// With a specific domain for wildcard references
-$resolved = $resolver->resolveValues($translations, '@domain.two');
-```
+## Security Policy
 
-### YAML File Format
+### Reporting Vulnerabilities
 
-#### Simple References
+If you discover a security vulnerability, please email security@wexample.com.
 
-```yaml
-# one.yml
-include_key: '@domain.two::some_key'
-```
+**Do not** open public issues for security vulnerabilities.
 
-```yaml
-# two.yml
-some_key: "Included value"
-```
+We take security seriously and will respond promptly to verified reports.
 
-#### Same-Key References
+## Privacy & Telemetry
 
-```yaml
-# one.yml
-my_key: '@domain.two::%'
-```
+This package does **not** collect any telemetry or usage data.
 
-```yaml
-# two.yml
-my_key: "Value of the same key in another domain"
-```
+Your privacy is respected — no data is transmitted to external services.
 
-#### Complete Inheritance
+## Support Channels
 
-```yaml
-# child.yml
-~extends: '@parent'
-child_key: "Child value"
-```
+- **GitHub Issues**: Bug reports and feature requests
+- **GitHub Discussions**: Questions and community support
+- **Documentation**: Comprehensive guides and API reference
+- **Email**: contact@wexample.com for general inquiries
 
-```yaml
-# parent.yml
-parent_key: "Parent value"
-```
+Community support is available through GitHub Discussions.
 
-After resolution, `child.yml` will contain:
-```yaml
-child_key: "Child value"
-parent_key: "Parent value"
-```
+## Contribution Guidelines
 
-### Constants
+We welcome contributions to the Wexample suite!
 
-The YamlIncludeResolver class defines several constants that you can use:
+### How to Contribute
 
-- `DOMAIN_PREFIX`: '@' - Prefix for domain references
-- `DOMAIN_SEPARATOR`: '::' - Separator between domain and key
-- `DOMAIN_SAME_KEY_WILDCARD`: '%' - Wildcard to reference the same key in another domain
-- `FILE_EXTENDS`: '~extends' - Key used for extending another YAML file
-- `KEYS_SEPARATOR`: '.' - Separator for nested keys
+1. **Fork** the repository
+2. **Create** a feature branch
+3. **Make** your changes
+4. **Test** thoroughly
+5. **Submit** a pull request
 
-### Integration with Symfony Translations
+## Maintainers & Authors
 
-This library integrates seamlessly with the Symfony Translation component through the companion package [wexample/symfony-translations](https://github.com/wexample/symfony-translations):
+Maintained by the Wexample team and community contributors.
 
-```php
-use Wexample\PhpYaml\YamlIncludeResolver;
-use Wexample\SymfonyTranslations\Translation\Translator;
-
-// Create a resolver instance
-$resolver = new YamlIncludeResolver();
-
-// Create a translator that uses the resolver
-$translator = new Translator($resolver);
-
-// The translator will use the resolver to handle references in translation files
-```
+See [CONTRIBUTORS.md](CONTRIBUTORS.md) for the full list of contributors.
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Free to use in both personal and commercial projects.
+
+## Integration in the Suite
+
+This package is part of the **Wexample Suite** — a collection of high-quality Python packages designed to work seamlessly together.
+
+### Related Packages
+
+The suite includes packages for configuration management, file handling, prompts, and more. Each package can be used independently or as part of the integrated suite.
+
+Visit the [Wexample Suite documentation](https://docs.wexample.com) for the complete package ecosystem.
+
+# About us
+
+Wexample stands as a cornerstone of the digital ecosystem — a collective of seasoned engineers, researchers, and creators driven by a relentless pursuit of technological excellence. More than a media platform, it has grown into a vibrant community where innovation meets craftsmanship, and where every line of code reflects a commitment to clarity, durability, and shared intelligence.
+
+This packages suite embodies this spirit. Trusted by professionals and enthusiasts alike, it delivers a consistent, high-quality foundation for modern development — open, elegant, and battle-tested. Its reputation is built on years of collaboration, refinement, and rigorous attention to detail, making it a natural choice for those who demand both robustness and beauty in their tools.
+
+Wexample cultivates a culture of mastery. Each package, each contribution carries the mark of a community that values precision, ethics, and innovation — a community proud to shape the future of digital craftsmanship.
+
