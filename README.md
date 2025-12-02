@@ -1,6 +1,6 @@
 # wexample/php-yaml
 
-Version: 1.0.38
+Version: 1.0.39
 
 A lightweight PHP library for resolving includes between YAML files
 
@@ -131,7 +131,7 @@ Refer to each package's documentation for specific version compatibility require
 
 - php: >=8.1
 - symfony/yaml: ^6.0|^7.0
-- wexample/php-helpers: 1.0.67
+- wexample/php-helpers: 1.0.68
 
 
 # About us
