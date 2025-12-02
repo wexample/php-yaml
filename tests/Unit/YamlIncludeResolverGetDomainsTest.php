@@ -25,17 +25,17 @@ class YamlIncludeResolverGetDomainsTest extends AbstractYamlIncludeResolverTest
     public function testGetDomains()
     {
         $domains = $this->resolver->getAllDomainsContent();
-        
+
         // Check that we have the expected domains
         $this->assertIsArray($domains);
         $this->assertCount(2, $domains);
         $this->assertArrayHasKey('domain.one', $domains);
         $this->assertArrayHasKey('domain.two', $domains);
-        
+
         // Check that the domains contain the expected data
         $this->assertIsArray($domains['domain.one']);
         $this->assertIsArray($domains['domain.two']);
-        
+
         // Check some specific values from the domains
         $this->assertEquals('Simple value', $domains['domain.one']['simple_key']);
         $this->assertEquals('Included value', $domains['domain.two']['include_key']);
@@ -48,9 +48,9 @@ class YamlIncludeResolverGetDomainsTest extends AbstractYamlIncludeResolverTest
     {
         // Register a new domain
         $this->resolver->registerFile('domain.three', $this->resourcesPath . '/domain/three.yml');
-        
+
         $domains = $this->resolver->getAllDomainsContent();
-        
+
         // Check that the new domain is included
         $this->assertCount(3, $domains);
         $this->assertArrayHasKey('domain.three', $domains);

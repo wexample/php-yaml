@@ -7,7 +7,6 @@ use Wexample\PhpYaml\Test\AbstractYamlIncludeResolverTest;
 
 class YamlIncludeResolverIncludeTest extends AbstractYamlIncludeResolverTest
 {
-
     /**
      * @throws Exception
      */
