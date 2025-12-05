@@ -1,0 +1,3 @@
+~extends: '@domain.one'
+
+three_specific_key: Value specific to three
