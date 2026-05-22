@@ -62,8 +62,7 @@ class YamlIncludeResolver
      */
     public function scanDirectory(
         string $relativeBasePath
-    ): array
-    {
+    ): array {
         // Clear caches when scanning a new directory
         $this->clearCaches();
 
@@ -73,8 +72,7 @@ class YamlIncludeResolver
             FileHelper::FILE_EXTENSION_YML,
             function (
                 SplFileInfo $fileInfo
-            ) use
-            (
+            ) use (
                 $relativeBasePath
             ): SplFileInfo {
 
@@ -92,8 +90,7 @@ class YamlIncludeResolver
     public function buildDomainFromFile(
         SplFileInfo $fileInfo,
         string $relativeBasePath
-    ): string
-    {
+    ): string {
         $exp = explode('.', $fileInfo->getFilename());
 
         // Build the domain from the file path
@@ -125,15 +122,14 @@ class YamlIncludeResolver
     public function registerFile(
         string $domain,
         string $filePath
-    ): void
-    {
-        if (!file_exists($filePath)) {
+    ): void {
+        if (! file_exists($filePath)) {
             throw new Exception("YAML file not found: $filePath");
         }
 
         $content = Yaml::parseFile($filePath);
 
-        if (!is_array($content)) {
+        if (! is_array($content)) {
             // This is not an empty file.
             if (trim(file_get_contents($filePath))) {
                 throw new Exception("Invalid YAML content in file: $filePath");
@@ -179,6 +175,7 @@ class YamlIncludeResolver
     private function extractDomain(string $reference): string
     {
         $parts = explode(self::DOMAIN_SEPARATOR, $reference, 2);
+
         return $parts[0];
     }
 
@@ -191,6 +188,7 @@ class YamlIncludeResolver
     private function extractKey(string $reference): string
     {
         $parts = explode(self::DOMAIN_SEPARATOR, $reference, 2);
+
         return $parts[1] ?? '';
     }
 
@@ -205,8 +203,7 @@ class YamlIncludeResolver
         array $values,
         ?string $domain = null,
         array &$resolved = []
-    ): array
-    {
+    ): array {
         foreach ($values as $key => $value) {
             // When we ask to resolve a file extending another one,
             // we should resolve the whole hierarchy as first file may not
@@ -240,8 +237,7 @@ class YamlIncludeResolver
         string $value,
         ?string $domain,
         string $key = ''
-    ): mixed
-    {
+    ): mixed {
         if ($this->isIncludeReference($value)) {
             return $this->getValueResolved($value);
         } elseif ($value === self::DOMAIN_SAME_KEY_WILDCARD && $domain) {
@@ -259,11 +255,11 @@ class YamlIncludeResolver
      */
     public static function splitDomainAndTrimPrefix(
         string $key,
-    ): ?string
-    {
+    ): ?string {
         if ($domain = static::splitDomain($key)) {
             return static::trimDomainPrefix($domain);
         }
+
         return null;
     }
 
@@ -275,8 +271,7 @@ class YamlIncludeResolver
      */
     public static function trimDomainPrefix(
         string $domain,
-    ): string
-    {
+    ): string {
         return substr($domain, strlen(self::DOMAIN_PREFIX));
     }
 
@@ -289,9 +284,8 @@ class YamlIncludeResolver
      */
     public function getValueResolved(
         string $key,
-    ): mixed
-    {
-        if (!$this->isIncludeReference($key) || !$domain = $this->splitDomainAndTrimPrefix($key)) {
+    ): mixed {
+        if (! $this->isIncludeReference($key) || ! $domain = $this->splitDomainAndTrimPrefix($key)) {
             return $key;
         }
 
@@ -311,8 +305,7 @@ class YamlIncludeResolver
     public function getValue(
         string $key,
         string $domain
-    ): mixed
-    {
+    ): mixed {
         // Generate a cache key
         $cacheKey = $domain . '|' . $key;
 
@@ -329,9 +322,10 @@ class YamlIncludeResolver
         // we'll capture the remaining path segments to append to the result
         $keys = explode(self::KEYS_SEPARATOR, $key);
 
-        if (!$data = $this->domains[$domain] ?? null) {
+        if (! $data = $this->domains[$domain] ?? null) {
             // Cache the result
             $this->valueCache[$cacheKey] = $default;
+
             return $default;
         }
 
@@ -355,6 +349,7 @@ class YamlIncludeResolver
                     $searchData = $default;
                     $found = false;
                 }
+
                 break;
             }
         }
@@ -370,7 +365,7 @@ class YamlIncludeResolver
                 $refKey = $key;
             }
 
-            if (!empty($remainingSegments)) {
+            if (! empty($remainingSegments)) {
                 $refKey .= self::KEYS_SEPARATOR . implode(separator: self::KEYS_SEPARATOR, array: $remainingSegments);
             }
 
@@ -385,7 +380,7 @@ class YamlIncludeResolver
 
         // If value was not found and the domain has an extends directive,
         // try to get the value from the parent domain
-        if (!$found && is_array($data) && array_key_exists(self::FILE_EXTENDS, $data) && is_string($data[self::FILE_EXTENDS])) {
+        if (! $found && is_array($data) && array_key_exists(self::FILE_EXTENDS, $data) && is_string($data[self::FILE_EXTENDS])) {
             // The domain has an extends directive, try to get the value from the parent domain
             // This allows for inheritance of values between domains
             $parentDomain = $this->trimDomainPrefix($data[self::FILE_EXTENDS]);
