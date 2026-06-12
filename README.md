@@ -1,6 +1,6 @@
 # php_yaml
 
-Version: 1.0.66
+Version: 1.0.67
 
 A lightweight PHP library for resolving includes between YAML files
 
