@@ -1,22 +1,6 @@
-# php_yaml
-
-Version: 1.0.70
-
-`wexample/php-yaml` is a PHP 8.1+ library that resolves cross-file references and inheritance between YAML files. It registers each YAML file under a named domain, then resolves any value written as `@domain.name::key.path` — including the `%` wildcard for same-key references and the `~extends` directive for full file inheritance — into its concrete counterpart. It is aimed at PHP projects that spread structured configuration or data across multiple YAML files and need a single resolver to flatten those references at runtime.
-
-## Table of Contents
-
-- [Architecture](#architecture)
-- [Integration in the Suite](#integration-in-the-suite)
-- [Dependencies](#dependencies)
-- [Versioning & Compatibility Policy](#versioning--compatibility-policy)
-- [License](#license)
-- [About us](#about-us)
-- [Migration Notes](#migration-notes)
-
 ## Architecture
 
-The library is a single class, src/YamlIncludeResolver.php, with no sub-packages. It keeps two pieces of private state: `$domains`, which maps dot-notation names to their parsed YAML arrays, and `$valueCache`, a flat lookup keyed by `"domain|key"` that is wiped whenever a new file enters `$domains`.
+The library is a single class, {{ path("src/YamlIncludeResolver.php") }}, with no sub-packages. It keeps two pieces of private state: `$domains`, which maps dot-notation names to their parsed YAML arrays, and `$valueCache`, a flat lookup keyed by `"domain|key"` that is wiped whenever a new file enters `$domains`.
 
 ### Source layout
 
@@ -81,7 +65,7 @@ The accumulator `$resolved` is passed by reference so inherited and own keys sha
 
 ### Inheritance path
 
-tests/Resources/yaml/domain/three.yml illustrates the `~extends` mechanism:
+{{ path("tests/Resources/yaml/domain/three.yml") }} illustrates the `~extends` mechanism:
 
 ```yaml
 ~extends: '@domain.one'
@@ -93,50 +77,4 @@ When `getValueResolved('@domain.three::simple_key')` is called, `getValue()` fai
 
 ### Test support
 
-src/Test/AbstractYamlIncludeResolverTest.php is a PHPUnit base class that constructs a fresh `YamlIncludeResolver` in `setUp()` and sets `$resourcesPath` to `tests/Resources/yaml`. Each concrete test suite extends it, registers the fixture files it needs, and exercises a specific part of the API (includes, extends, `resolveValues`, directory scanning, `getAllDomainsContent`).
-
-## Integration in the Suite
-
-This package is part of the Wexample Suite — a collection of high-quality, modular tools designed to work seamlessly together across multiple languages and environments.
-
-### Related Packages
-
-The suite includes packages for configuration management, file handling, prompts, and more. Each package can be used independently or as part of the integrated suite.
-
-Visit the [Wexample Suite documentation](https://docs.wexample.com) for the complete package ecosystem.
-
-## Dependencies
-
-- php: >=8.1
-- symfony/yaml: ^6.0|^7.0
-- wexample/php-helpers: >=2.0.0
-
-## Versioning & Compatibility Policy
-
-Wexample packages follow **Semantic Versioning** (SemVer):
-
-- **MAJOR**: Breaking changes
-- **MINOR**: New features, backward compatible
-- **PATCH**: Bug fixes, backward compatible
-
-We maintain backward compatibility within major versions and provide clear migration guides for breaking changes.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-Free to use in both personal and commercial projects.
-
-## About us
-
-[Wexample](https://wexample.com) stands as a cornerstone of the digital ecosystem — a collective of seasoned engineers, researchers, and creators driven by a relentless pursuit of technological excellence. More than a media platform, it has grown into a vibrant community where innovation meets craftsmanship, and where every line of code reflects a commitment to clarity, durability, and shared intelligence.
-
-This packages suite embodies this spirit. Trusted by professionals and enthusiasts alike, it delivers a consistent, high-quality foundation for modern development — open, elegant, and battle-tested. Its reputation is built on years of collaboration, refinement, and rigorous attention to detail, making it a natural choice for those who demand both robustness and beauty in their tools.
-
-Wexample cultivates a culture of mastery. Each package, each contribution carries the mark of a community that values precision, ethics, and innovation — a community proud to shape the future of digital craftsmanship.
-
-## Migration Notes
-
-When upgrading between major versions, refer to the migration guides in the documentation.
-
-Breaking changes are clearly documented with upgrade paths and examples.
+{{ path("src/Test/AbstractYamlIncludeResolverTest.php") }} is a PHPUnit base class that constructs a fresh `YamlIncludeResolver` in `setUp()` and sets `$resourcesPath` to `tests/Resources/yaml`. Each concrete test suite extends it, registers the fixture files it needs, and exercises a specific part of the API (includes, extends, `resolveValues`, directory scanning, `getAllDomainsContent`).
