@@ -1,6 +1,6 @@
 # php_yaml
 
-Version: 1.0.71
+Version: 1.0.72
 
 `wexample/php-yaml` is a PHP 8.1+ library that resolves cross-file references and inheritance between YAML files. It registers each YAML file under a named domain, then resolves any value written as `@domain.name::key.path` — including the `%` wildcard for same-key references and the `~extends` directive for full file inheritance — into its concrete counterpart. It is aimed at PHP projects that spread structured configuration or data across multiple YAML files and need a single resolver to flatten those references at runtime.
 
@@ -107,9 +107,9 @@ Visit the [Wexample Suite documentation](https://docs.wexample.com) for the comp
 
 ## Dependencies
 
-- php: >=8.1
+- php: >=8.5
 - symfony/yaml: ^6.0|^7.0
-- wexample/php-helpers: >=3.0.0
+- wexample/php-helpers: >=4.0.0
 
 ## Versioning & Compatibility Policy
 

@@ -6,7 +6,7 @@ git:
 global:
   name: php_yaml
   type: app
-  version: 1.0.71
+  version: 1.0.72
 wex:
   migration: 5
   version: 6.0.136
