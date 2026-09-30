@@ -138,11 +138,20 @@ class YamlIncludeResolver
             }
         }
 
-        // Store domain without prefix
-        // The @ prefix is only used in YAML references
+        $this->registerContent($domain, $content);
+    }
+
+    /**
+     * Register content already parsed, for a domain read from part of a file.
+     *
+     * @param string $domain Domain name, without the @ prefix used in references
+     */
+    public function registerContent(
+        string $domain,
+        array $content
+    ): void {
         $this->domains[$domain] = $content;
 
-        // Clear caches when registering a new file
         $this->clearCaches();
     }
 
