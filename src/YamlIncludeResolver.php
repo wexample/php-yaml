@@ -6,6 +6,7 @@ use Exception;
 use SplFileInfo;
 use Symfony\Component\Yaml\Yaml;
 use Wexample\Helpers\Helper\FileHelper;
+use Wexample\PhpYaml\Exception\CircularYamlReferenceException;
 
 class YamlIncludeResolver
 {
@@ -43,6 +44,15 @@ class YamlIncludeResolver
      * Cache for resolved values
      */
     private array $valueCache = [];
+
+    /**
+     * What is being resolved right now, outermost first: `domain|key` for a
+     * value, `@domain` for a file extended. Met again, the chain is a circle
+     * that would recurse until the stack runs out; emptied as each step returns.
+     *
+     * @var string[]
+     */
+    private array $resolving = [];
 
     /**
      * Get all registered domains and their content
@@ -220,7 +230,13 @@ class YamlIncludeResolver
             if ($key === self::FILE_EXTENDS) {
                 $dest = $this->trimDomainPrefix($value);
                 if (isset($this->domains[$dest])) {
-                    $this->resolveValues($this->domains[$dest], $dest, $resolved);
+                    $this->enterResolving(self::DOMAIN_PREFIX . $dest);
+
+                    try {
+                        $this->resolveValues($this->domains[$dest], $dest, $resolved);
+                    } finally {
+                        array_pop($this->resolving);
+                    }
                 } else {
                     $resolved[$key] = $value;
                 }
@@ -323,6 +339,31 @@ class YamlIncludeResolver
             return $this->valueCache[$cacheKey];
         }
 
+        $this->enterResolving($cacheKey);
+
+        try {
+            return $this->findValue($key, $domain, $cacheKey);
+        } finally {
+            array_pop($this->resolving);
+        }
+    }
+
+    /** Marks a step as being resolved, refusing one already on the way. */
+    private function enterResolving(string $step): void
+    {
+        if (in_array($step, $this->resolving, true)) {
+            // Each step on the way pops itself as the exception passes it.
+            throw CircularYamlReferenceException::forPath([...$this->resolving, $step]);
+        }
+
+        $this->resolving[] = $step;
+    }
+
+    private function findValue(
+        string $key,
+        string $domain,
+        string $cacheKey
+    ): mixed {
         $found = false;
         $default = $domain . static::DOMAIN_SEPARATOR . $key;
 
